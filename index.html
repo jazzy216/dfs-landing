@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Anti-Surveillance Resources</title>
+<style>
+    :root {
+        --bg-color: #121212;
+        --card-bg: #1e1e1e;
+        --accent-color: #00ff9d; 
+        --text-main: #e0e0e0;
+        --text-dim: #b0b0b0;
+    }
+
+    body { 
+        font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+        line-height: 1.6; 
+        padding: 40px 20px; 
+        background-color: var(--bg-color); 
+        color: var(--text-main);
+        margin: 0;
+    }
+
+    .header-section {
+        text-align: center;
+        margin-bottom: 50px;
+    }
+
+    h1 { 
+        color: var(--accent-color); 
+        margin-bottom: 20px; 
+        text-transform: uppercase;
+        letter-spacing: 3px;
+        font-size: 2.5rem;
+        text-shadow: 0 0 10px rgba(0, 255, 157, 0.3);
+    }
+
+    /* Search Bar Styles */
+    #searchBar {
+        width: 100%;
+        max-width: 500px;
+        padding: 12px 20px;
+        background: #2a2a2a;
+        border: 1px solid #444;
+        border-radius: 25px;
+        color: var(--accent-color);
+        font-size: 1rem;
+        outline: none;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    }
+
+    #searchBar:focus {
+        border-color: var(--accent-color);
+        box-shadow: 0 0 10px rgba(0, 255, 157, 0.2);
+        background: #333;
+    }
+
+    #searchBar::placeholder {
+        color: #666;
+    }
+
+    .video-grid {
+        max-width: 900px;
+        margin: 0 auto;
+    }
+
+    .video-container { 
+        margin-bottom: 60px; 
+        background: var(--card-bg); 
+        border-radius: 12px; 
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        border: 1px solid #333;
+        transition: transform 0.3s ease, border-color 0.3s ease;
+    }
+
+    .video-container:hover {
+        transform: translateY(-5px);
+        border-color: var(--accent-color);
+    }
+
+    .video-content {
+        padding: 25px;
+    }
+
+    .iframe-wrapper {
+        position: relative;
+        width: 100%;
+        padding-bottom: 56.25%;
+        height: 0;
+        background: #000;
+    }
+
+    .iframe-wrapper iframe { 
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%; 
+        height: 100%; 
+        border: none; 
+    }
+
+    h3 { 
+        margin: 15px 0 10px 0; 
+        color: var(--accent-color); 
+        font-size: 1.4rem;
+    }
+
+    p { 
+        color: var(--text-dim); 
+        font-size: 1rem;
+        margin: 0;
+    }
+
+    .tag { 
+        display: inline-block;
+        font-size: 0.7em; 
+        background: rgba(0, 255, 157, 0.1); 
+        padding: 4px 12px; 
+        border-radius: 20px; 
+        text-transform: uppercase; 
+        font-weight: bold; 
+        color: var(--accent-color); 
+        border: 1px solid var(--accent-color);
+        margin-bottom: 10px;
+    }
+
+    /* Message for no results */
+    #noResults {
+        text-align: center;
+        display: none;
+        color: var(--text-dim);
+        margin-top: 50px;
+    }
+</style>
+</head>
+<body>
+
+<div class="header-section">
+    <h1>Anti-Surveillance Resources</h1>
+    <input type="text" id="searchBar" onkeyup="filterVideos()" placeholder="Search hardware, privacy, security...">
+</div>
+
+<div class="video-grid" id="videoGrid">
+    <div class="video-container" data-category="hardware">
+        <div class="iframe-wrapper"><iframe src="https://www.youtube.com/embed/z6IOVYemF20" allowfullscreen></iframe></div>
+        <div class="video-content">
+            <span class="tag">Hardware</span>
+            <h3>Touch Screen Meshtastic Build</h3>
+            <p>Showcasing a hardware build for off-grid, encrypted mesh network communication using LoRa radios.</p>
+        </div>
+    </div>
+
+    <div class="video-container" data-category="privacy os">
+        <div class="iframe-wrapper"><iframe src="https://www.youtube.com/embed/RMS4-05vQxY" allowfullscreen></iframe></div>
+        <div class="video-content">
+            <span class="tag">Privacy & OS</span>
+            <h3>Disable Windows Bloatware & Spyware</h3>
+            <p>A guide on stripping away telemetry and unnecessary background processes to reclaim privacy in Windows.</p>
+        </div>
+    </div>
+
+    <div class="video-container" data-category="networking">
+        <div class="iframe-wrapper"><iframe src="https://www.youtube.com/embed/Z93pw1ddDMg" allowfullscreen></iframe></div>
+        <div class="video-content">
+            <span class="tag">Networking</span>
+            <h3>Rayhunter with Verizon Orbic</h3>
+            <p>A demonstration of cellular signal analysis and "Rayhunter" software running on an Orbic mobile device.</p>
+        </div>
+    </div>
+
+    <div class="video-container" data-category="surveillance">
+        <div class="iframe-wrapper"><iframe src="https://www.youtube.com/embed/vU1-uiUlHTo" allowfullscreen></iframe></div>
+        <div class="video-content">
+            <span class="tag">Surveillance</span>
+            <h3>Flock Cameras Security Vulnerabilities</h3>
+            <p>Benn Jordan investigates the security risks and lack of password protection on license plate readers.</p>
+        </div>
+    </div>
+
+    <div class="video-container" data-category="privacy">
+        <div class="iframe-wrapper"><iframe src="https://www.youtube.com/embed/3rm4AZ24AbI" allowfullscreen></iframe></div>
+        <div class="video-content">
+            <span class="tag">Privacy</span>
+            <h3>The Google Botnet</h3>
+            <p>A deep dive into how Google's ecosystem tracks user behavior across the internet.</p>
+        </div>
+    </div>
+
+    <div class="video-container" data-category="legal rights">
+        <div class="iframe-wrapper"><iframe src="https://www.youtube.com/embed/QRd7ZO0E7PQ" allowfullscreen></iframe></div>
+        <div class="video-content">
+            <span class="tag">Legal Rights</span>
+            <h3>The Right to Privacy in Public</h3>
+            <p>Exploring the legal arguments for maintaining privacy rights even in public spaces.</p>
+        </div>
+    </div>
+
+    <div class="video-container" data-category="communication">
+        <div class="iframe-wrapper"><iframe src="https://www.youtube.com/embed/v9RgOumTkYU" allowfullscreen></iframe></div>
+        <div class="video-content">
+            <span class="tag">Communication</span>
+            <h3>Using VoIP for Privacy</h3>
+            <p>How to set up and use Voice over IP to prevent your identity from being tied to a SIM card.</p>
+        </div>
+    </div>
+
+    <div class="video-container" data-category="hardware">
+        <div class="iframe-wrapper"><iframe src="https://www.youtube.com/embed/nT1ZIlEl3LE" allowfullscreen></iframe></div>
+        <div class="video-content">
+            <span class="tag">Hardware</span>
+            <h3>Travel Router Security (GL.iNet Slate AX)</h3>
+            <p>Creating a secure personal "bubble" when using public Wi-Fi in hotels or airports.</p>
+        </div>
+    </div>
+
+    <div class="video-container" data-category="security">
+        <div class="iframe-wrapper"><iframe src="https://www.youtube.com/embed/uB0gr7Fh6lY" allowfullscreen></iframe></div>
+        <div class="video-content">
+            <span class="tag">Security</span>
+            <h3>Analyzing Flock Camera Security</h3>
+            <p>Technical insights into the vulnerabilities surrounding private surveillance networks.</p>
+        </div>
+    </div>
+
+    <div class="video-container" data-category="privacy os">
+        <div class="iframe-wrapper"><iframe src="https://www.youtube.com/embed/nHxnjcx_G34" allowfullscreen></iframe></div>
+        <div class="video-content">
+            <span class="tag">Privacy & OS</span>
+            <h3>GrapheneOS: The Ultimate Privacy Phone</h3>
+            <p>David Bombal breaks down how GrapheneOS provides a hardened, de-Googled experience.</p>
+        </div>
+    </div>
+</div>
+
+<p id="noResults">No resources match your search.</p>
+
+<script>
+function filterVideos() {
+    let input = document.getElementById('searchBar').value.toLowerCase();
+    let cards = document.getElementsByClassName('video-container');
+    let noResults = document.getElementById('noResults');
+    let visibleCount = 0;
+
+    for (let i = 0; i < cards.length; i++) {
+        let content = cards[i].innerText.toLowerCase();
+        if (content.includes(input)) {
+            cards[i].style.display = "block";
+            visibleCount++;
+        } else {
+            cards[i].style.display = "none";
+        }
+    }
+
+    noResults.style.display = visibleCount === 0 ? "block" : "none";
+}
+</script>
+
+</body>
+</html>
