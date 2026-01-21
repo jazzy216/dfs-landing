@@ -1,148 +1,197 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta property="og:title" content="Dark Fire Security | Anti-Surveillance Resources">
-<meta property="og:description" content="A curated collection of tools and guides for digital privacy and anti-surveillance.">
-<title>Anti-Surveillance Resources</title>
-<style>
-    :root {
-        --bg-color: #121212;
-        --card-bg: #1e1e1e;
-        --accent-color: #00ff9d; 
-        --text-main: #e0e0e0;
-        --text-dim: #b0b0b0;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta property="og:title" content="Dark Fire Security | Anti-Surveillance Resources">
+    <meta property="og:description" content="A curated collection of tools and guides for digital privacy and anti-surveillance.">
+    <title>Dark Fire Security | Resources</title>
+    <style>
+        :root {
+            --bg-color: #0a0a0a;
+            --card-bg: #161616;
+            --accent-color: #00ff9d; 
+            --text-main: #e0e0e0;
+            --text-dim: #999999;
+            --nav-bg: rgba(20, 20, 20, 0.95);
+        }
 
-    body { 
-        font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
-        line-height: 1.6; 
-        padding: 40px 20px; 
-        background-color: var(--bg-color); 
-        color: var(--text-main);
-        margin: 0;
-    }
+        * { box-sizing: border-box; }
 
-    .header-section {
-        text-align: center;
-        margin-bottom: 50px;
-    }
+        body { 
+            font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; 
+            line-height: 1.6; 
+            background-color: var(--bg-color); 
+            color: var(--text-main);
+            margin: 0;
+            padding-top: 80px; /* Space for fixed header */
+        }
 
-    h1 { 
-        color: var(--accent-color); 
-        margin-bottom: 20px; 
-        text-transform: uppercase;
-        letter-spacing: 3px;
-        font-size: 2.5rem;
-        text-shadow: 0 0 10px rgba(0, 255, 157, 0.3);
-    }
+        /* Professional Header */
+        header {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: var(--nav-bg);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid #333;
+            z-index: 1000;
+            padding: 15px 0;
+        }
 
-    /* Search Bar Styles */
-    #searchBar {
-        width: 100%;
-        max-width: 500px;
-        padding: 12px 20px;
-        background: #2a2a2a;
-        border: 1px solid #444;
-        border-radius: 25px;
-        color: var(--accent-color);
-        font-size: 1rem;
-        outline: none;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-    }
+        .nav-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+        }
 
-    #searchBar:focus {
-        border-color: var(--accent-color);
-        box-shadow: 0 0 10px rgba(0, 255, 157, 0.2);
-        background: #333;
-    }
+        .logo {
+            font-weight: 800;
+            font-size: 1.5rem;
+            color: var(--accent-color);
+            text-decoration: none;
+            letter-spacing: -1px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
 
-    #searchBar::placeholder {
-        color: #666;
-    }
+        .logo span { color: #fff; }
 
-    .video-grid {
-        max-width: 900px;
-        margin: 0 auto;
-    }
+        /* Search Section */
+        .hero-section {
+            text-align: center;
+            padding: 60px 20px;
+            background: radial-gradient(circle at center, #1a1a1a 0%, #0a0a0a 100%);
+        }
 
-    .video-container { 
-        margin-bottom: 60px; 
-        background: var(--card-bg); 
-        border-radius: 12px; 
-        overflow: hidden;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        border: 1px solid #333;
-        transition: transform 0.3s ease, border-color 0.3s ease;
-    }
+        h1 { 
+            color: #fff; 
+            margin-bottom: 10px; 
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            font-size: 2.5rem;
+        }
 
-    .video-container:hover {
-        transform: translateY(-5px);
-        border-color: var(--accent-color);
-    }
+        .subtitle {
+            color: var(--accent-color);
+            font-weight: 600;
+            margin-bottom: 30px;
+            display: block;
+        }
 
-    .video-content {
-        padding: 25px;
-    }
+        #searchBar {
+            width: 100%;
+            max-width: 600px;
+            padding: 16px 25px;
+            background: #222;
+            border: 1px solid #444;
+            border-radius: 8px;
+            color: var(--accent-color);
+            font-size: 1rem;
+            outline: none;
+            transition: 0.3s;
+        }
 
-    .iframe-wrapper {
-        position: relative;
-        width: 100%;
-        padding-bottom: 56.25%;
-        height: 0;
-        background: #000;
-    }
+        #searchBar:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 15px rgba(0, 255, 157, 0.1);
+        }
 
-    .iframe-wrapper iframe { 
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%; 
-        height: 100%; 
-        border: none; 
-    }
+        /* Video Grid */
+        .video-grid {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
 
-    h3 { 
-        margin: 15px 0 10px 0; 
-        color: var(--accent-color); 
-        font-size: 1.4rem;
-    }
+        .video-container { 
+            margin-bottom: 50px; 
+            background: var(--card-bg); 
+            border-radius: 16px; 
+            overflow: hidden;
+            border: 1px solid #222;
+            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
 
-    p { 
-        color: var(--text-dim); 
-        font-size: 1rem;
-        margin: 0;
-    }
+        .video-container:hover {
+            transform: translateY(-8px);
+            border-color: var(--accent-color);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+        }
 
-    .tag { 
-        display: inline-block;
-        font-size: 0.7em; 
-        background: rgba(0, 255, 157, 0.1); 
-        padding: 4px 12px; 
-        border-radius: 20px; 
-        text-transform: uppercase; 
-        font-weight: bold; 
-        color: var(--accent-color); 
-        border: 1px solid var(--accent-color);
-        margin-bottom: 10px;
-    }
+        .video-content { padding: 30px; }
 
-    /* Message for no results */
-    #noResults {
-        text-align: center;
-        display: none;
-        color: var(--text-dim);
-        margin-top: 50px;
-    }
-</style>
+        .iframe-wrapper {
+            position: relative;
+            padding-bottom: 56.25%;
+            height: 0;
+            background: #000;
+        }
+
+        .iframe-wrapper iframe { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; 
+        }
+
+        h3 { margin: 15px 0 10px 0; color: #fff; font-size: 1.5rem; }
+        p { color: var(--text-dim); font-size: 1rem; }
+
+        .tag { 
+            font-size: 0.7rem; 
+            background: rgba(0, 255, 157, 0.1); 
+            padding: 5px 12px; 
+            border-radius: 4px; 
+            text-transform: uppercase; 
+            font-weight: 700; 
+            color: var(--accent-color); 
+            border: 1px solid rgba(0, 255, 157, 0.3);
+            margin-bottom: 15px;
+            display: inline-block;
+        }
+
+        /* Footer Section */
+        footer {
+            background: #050505;
+            border-top: 1px solid #222;
+            padding: 60px 20px;
+            margin-top: 100px;
+        }
+
+        .footer-content {
+            max-width: 1000px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 40px;
+        }
+
+        .footer-logo { color: var(--accent-color); font-weight: 800; font-size: 1.2rem; margin-bottom: 20px; display: block; }
+        .footer-text { color: var(--text-dim); font-size: 0.9rem; }
+        
+        #noResults { text-align: center; display: none; color: var(--text-dim); padding: 50px; }
+
+        @media (max-width: 600px) {
+            h1 { font-size: 1.8rem; }
+            body { padding-top: 70px; }
+        }
+    </style>
 </head>
 <body>
 
-<div class="header-section">
-    <h1>Anti-Surveillance Resources</h1>
-    <input type="text" id="searchBar" onkeyup="filterVideos()" placeholder="Search hardware, privacy, security...">
+<header>
+    <div class="nav-container">
+        <a href="#" class="logo">DARK FIRE <span>SECURITY</span></a>
+        <div style="font-size: 0.8rem; color: var(--text-dim); font-weight: 600;">ANTI-SURVEILLANCE DEPT.</div>
+    </div>
+</header>
+
+<div class="hero-section">
+    <h1>RESOURCES</h1>
+    <span class="subtitle">Equipping you against everyday surveillance.</span>
+    <input type="text" id="searchBar" onkeyup="filterVideos()" placeholder="Search by topic, tool, or creator...">
 </div>
 
 <div class="video-grid" id="videoGrid">
@@ -164,66 +213,21 @@
         </div>
     </div>
 
-    <div class="video-container" data-category="networking">
-        <div class="iframe-wrapper"><iframe src="https://www.youtube.com/embed/Z93pw1ddDMg" allowfullscreen></iframe></div>
-        <div class="video-content">
-            <span class="tag">Networking</span>
-            <h3>Rayhunter with Verizon Orbic</h3>
-            <p>A demonstration of cellular signal analysis and "Rayhunter" software running on an Orbic mobile device.</p>
-        </div>
-    </div>
-
-    <div class="video-container" data-category="surveillance">
-        <div class="iframe-wrapper"><iframe src="https://www.youtube.com/embed/vU1-uiUlHTo" allowfullscreen></iframe></div>
-        <div class="video-content">
-            <span class="tag">Surveillance</span>
-            <h3>Flock Cameras Security Vulnerabilities</h3>
-            <p>Benn Jordan investigates the security risks and lack of password protection on license plate readers.</p>
-        </div>
-    </div>
-
-    <div class="video-container" data-category="privacy">
-        <div class="iframe-wrapper"><iframe src="https://www.youtube.com/embed/3rm4AZ24AbI" allowfullscreen></iframe></div>
-        <div class="video-content">
-            <span class="tag">Privacy</span>
-            <h3>The Google Botnet</h3>
-            <p>A deep dive into how Google's ecosystem tracks user behavior across the internet.</p>
-        </div>
-    </div>
-
-    <div class="video-container" data-category="legal rights">
-        <div class="iframe-wrapper"><iframe src="https://www.youtube.com/embed/QRd7ZO0E7PQ" allowfullscreen></iframe></div>
-        <div class="video-content">
-            <span class="tag">Legal Rights</span>
-            <h3>The Right to Privacy in Public</h3>
-            <p>Exploring the legal arguments for maintaining privacy rights even in public spaces.</p>
-        </div>
-    </div>
-
-    <div class="video-container" data-category="communication">
-        <div class="iframe-wrapper"><iframe src="https://www.youtube.com/embed/v9RgOumTkYU" allowfullscreen></iframe></div>
-        <div class="video-content">
-            <span class="tag">Communication</span>
-            <h3>Using VoIP for Privacy</h3>
-            <p>How to set up and use Voice over IP to prevent your identity from being tied to a SIM card.</p>
-        </div>
-    </div>
-
     <div class="video-container" data-category="hardware">
-        <div class="iframe-wrapper"><iframe src="https://www.youtube.com/embed/nT1ZIlEl3LE" allowfullscreen></iframe></div>
+        <div class="iframe-wrapper"><iframe src="https://www.youtube.com/embed/tbCKWX34_G4" allowfullscreen></iframe></div>
         <div class="video-content">
             <span class="tag">Hardware</span>
-            <h3>Travel Router Security (GL.iNet Slate AX)</h3>
-            <p>Creating a secure personal "bubble" when using public Wi-Fi in hotels or airports.</p>
+            <h3>Self-Hosted Private Cloud Cameras</h3>
+            <p>Network Chuck walks you through building your own secure, private camera system without third-party cloud providers.</p>
         </div>
     </div>
 
-    <div class="video-container" data-category="security">
-        <div class="iframe-wrapper"><iframe src="https://www.youtube.com/embed/uB0gr7Fh6lY" allowfullscreen></iframe></div>
+    <div class="video-container" data-category="privacy os">
+        <div class="iframe-wrapper"><iframe src="https://www.youtube.com/embed/uElWqzjC1eI" allowfullscreen></iframe></div>
         <div class="video-content">
-            <span class="tag">Security</span>
-            <h3>Analyzing Flock Camera Security</h3>
-            <p>Technical insights into the vulnerabilities surrounding private surveillance networks.</p>
+            <span class="tag">Privacy & OS</span>
+            <h3>Use a Local Windows Account</h3>
+            <p>David Bombal explains why you should avoid Microsoft accounts and how to set up a local user for better privacy.</p>
         </div>
     </div>
 
@@ -232,56 +236,52 @@
         <div class="video-content">
             <span class="tag">Privacy & OS</span>
             <h3>GrapheneOS: The Ultimate Privacy Phone</h3>
-            <p>David Bombal breaks down how GrapheneOS provides a hardened, de-Googled experience.</p>
+            <p>David Bombal breaks down how GrapheneOS provides a hardened, de-Googled mobile experience.</p>
         </div>
     </div>
-</div>
 
     <div class="video-container" data-category="privacy">
-        <div class="iframe-wrapper">
-            <iframe src="https://www.youtube.com/embed/QpFw7dk9l-0" allowfullscreen></iframe>
-        </div>
+        <div class="iframe-wrapper"><iframe src="https://www.youtube.com/embed/QpFw7dk9l-0" allowfullscreen></iframe></div>
         <div class="video-content">
             <span class="tag">Privacy</span>
             <h3>Proton: Everyday Surveillance</h3>
-            <p>An overview of how modern digital life tracks your every move and what you can do to reclaim your data.</p>
+            <p>An overview of how modern digital life tracks your move and what you can do to reclaim your data.</p>
         </div>
     </div>
 
     <div class="video-container" data-category="security">
-        <div class="iframe-wrapper">
-            <iframe src="https://www.youtube.com/embed/jBsSLcK6h8A" allowfullscreen></iframe>
-        </div>
+        <div class="iframe-wrapper"><iframe src="https://www.youtube.com/embed/jBsSLcK6h8A" allowfullscreen></iframe></div>
         <div class="video-content">
             <span class="tag">Security</span>
             <h3>Proton: Workplace Spying</h3>
             <p>Exploring the tools and methods employers use to monitor staff and how to protect your boundaries.</p>
         </div>
     </div>
+</div>
 
-    <div class="video-container" data-category="privacy os">
-        <div class="iframe-wrapper">
-            <iframe src="https://www.youtube.com/embed/uElWqzjC1eI" allowfullscreen></iframe>
+<p id="noResults">No resources found matching your search query.</p>
+
+<footer>
+    <div class="footer-content">
+        <div>
+            <span class="footer-logo">DARK FIRE SECURITY</span>
+            <p class="footer-text">Our mission is to empower individuals and small businesses with the knowledge to defend their digital sovereignty and privacy.</p>
         </div>
-        <div class="video-content">
-            <span class="tag">Privacy & OS</span>
-            <h3>Use a Local Windows Account</h3>
-            <p>David Bombal explains why you should avoid Microsoft accounts and how to set up a local user for better privacy.</p>
+        <div>
+            <h4 style="color: #fff; margin-bottom: 15px;">Resources</h4>
+            <ul style="list-style: none; padding: 0; font-size: 0.9rem; color: var(--text-dim);">
+                <li style="margin-bottom: 8px;">Network Security</li>
+                <li style="margin-bottom: 8px;">Hardware Hardening</li>
+                <li style="margin-bottom: 8px;">Privacy OS Guides</li>
+            </ul>
+        </div>
+        <div>
+            <h4 style="color: #fff; margin-bottom: 15px;">Disclaimer</h4>
+            <p class="footer-text" style="font-size: 0.75rem;">Information provided is for educational purposes. Always perform due diligence when implementing security measures.</p>
+            <p class="footer-text" style="margin-top: 15px;">&copy; 2026 Dark Fire Security</p>
         </div>
     </div>
-
-    <div class="video-container" data-category="hardware">
-        <div class="iframe-wrapper">
-            <iframe src="https://www.youtube.com/embed/tbCKWX34_G4" allowfullscreen></iframe>
-        </div>
-        <div class="video-content">
-            <span class="tag">Hardware</span>
-            <h3>Self-Hosted Private Cloud Cameras</h3>
-            <p>Network Chuck walks you through building your own secure, private camera system without relying on third-party cloud providers.</p>
-        </div>
-    </div>
-
-<p id="noResults">No resources match your search.</p>
+</footer>
 
 <script>
 function filterVideos() {
@@ -299,7 +299,6 @@ function filterVideos() {
             cards[i].style.display = "none";
         }
     }
-
     noResults.style.display = visibleCount === 0 ? "block" : "none";
 }
 </script>
