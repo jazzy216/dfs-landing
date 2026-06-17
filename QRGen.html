@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+<title>Dark Fire Security // QR Toolkit</title>
+
+<!--
+  Dark Fire Security — QR Toolkit
+  Generate QR codes (text/URL, Wi-Fi, contact card) and scan them back —
+  via live camera or by uploading an image.
+
+  Libraries (loaded from cdnjs, no build step required):
+    - qrcodejs   (generation)   https://github.com/davidshimjs/qrcodejs
+    - qr-scanner (scanning)     https://github.com/nimiq/qr-scanner
+
+  Note on camera scanning: getUserMedia requires HTTPS (or localhost).
+  It will work once this is deployed to Vercel/GitHub Pages. It may be
+  blocked inside a sandboxed preview iframe that doesn't grant camera
+  permissions — the "Upload Image" scan mode has no such restriction and
+  always works, including in this preview.
+-->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qr-scanner/1.4.2/qr-scanner.umd.min.js"></script>
+
+<style>
+  :root {
+    --bg: #0b0d0e;
+    --panel: #15181b;
+    --panel-alt: #1b1f23;
+    --border: #2a2f34;
+    --text: #d7dde1;
+    --muted: #828a90;
+    --green: #1fe88f;
+    --green-dim: #15a86a;
+    --green-hover: #27ff9f;
+    --red: #ff5c5c;
+    --amber: #f0b429;
+    --mono: "Consolas", "SF Mono", "Cascadia Code", "DejaVu Sans Mono", monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    min-height: 100vh;
+  }
+
+  .header {
+    background: var(--panel);
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .header .bar { width: 3px; height: 38px; background: var(--green); }
+  .header h1 { font-size: 16px; margin: 0; color: var(--green); letter-spacing: 0.04em; }
+  .header p { font-size: 10px; margin: 2px 0 0; color: var(--muted); letter-spacing: 0.08em; }
+
+  .tabs {
+    display: flex;
+    gap: 8px;
+    padding: 16px 24px 0;
+    max-width: 720px;
+    margin: 0 auto;
+  }
+  .tab {
+    flex: 1;
+    text-align: center;
+    padding: 10px 0;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    border-radius: 4px 4px 0 0;
+  }
+  .tab.active { color: var(--green); border-color: var(--green-dim); background: var(--panel-alt); }
+
+  .panel {
+    max-width: 720px;
+    margin: 0 auto;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 0 0 6px 6px;
+    padding: 20px;
+  }
+  .view { display: none; }
+  .view.active { display: block; }
+
+  .field { margin-bottom: 14px; }
+  .field label {
+    display: block;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    margin-bottom: 6px;
+  }
+  input[type="text"], input[type="password"], input[type="email"], input[type="tel"], textarea, select {
+    width: 100%;
+    background: var(--panel-alt);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    padding: 9px 10px;
+    border-radius: 4px;
+    outline: none;
+  }
+  input:focus, textarea:focus, select:focus { border-color: var(--green-dim); }
+  textarea { resize: vertical; min-height: 64px; }
+
+  .row { display: flex; gap: 10px; }
+  .row > .field { flex: 1; }
+
+  .type-select {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .type-btn {
+    flex: 1;
+    padding: 9px 0;
+    text-align: center;
+    background: var(--panel-alt);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 11px;
+    cursor: pointer;
+    border-radius: 4px;
+  }
+  .type-btn.active { color: #06140d; background: var(--green); border-color: var(--green); }
+
+  .checkbox-row { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+  .checkbox-row input { width: auto; }
+  .checkbox-row label { font-size: 11px; color: var(--text); margin: 0; }
+
+  .qr-stage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    margin-top: 18px;
+  }
+  .qr-card {
+    background: #ffffff;
+    padding: 16px;
+    border-radius: 8px;
+    border: 1px solid var(--green-dim);
+    box-shadow: 0 0 24px rgba(31, 232, 143, 0.12);
+    min-height: 100px;
+    min-width: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .qr-placeholder { color: #aaa; font-size: 11px; font-family: var(--mono); }
+
+  button.action {
+    font-family: var(--mono);
+    font-size: 12px;
+    border: none;
+    border-radius: 4px;
+    padding: 11px 18px;
+    cursor: pointer;
+  }
+  button.primary { background: var(--green); color: #06140d; font-weight: bold; }
+  button.primary:hover { background: var(--green-hover); }
+  button.secondary { background: var(--panel-alt); color: var(--text); border: 1px solid var(--border); }
+  button.secondary:hover { border-color: var(--green-dim); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .scan-toggle { display: flex; gap: 8px; margin-bottom: 16px; }
+
+  .video-wrap {
+    position: relative;
+    width: 100%;
+    max-width: 420px;
+    margin: 0 auto;
+    background: #000;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  video { width: 100%; display: block; }
+
+  .upload-zone {
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 28px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .upload-zone:hover { border-color: var(--green-dim); }
+  .upload-zone img { max-width: 100%; max-height: 180px; margin-top: 12px; border-radius: 4px; }
+
+  .result-box {
+    margin-top: 16px;
+    background: var(--panel-alt);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px;
+    display: none;
+  }
+  .result-box.show { display: block; }
+  .result-box .label { font-size: 10px; color: var(--muted); letter-spacing: 0.08em; margin-bottom: 6px; }
+  .result-box .value { font-size: 13px; color: var(--green); word-break: break-all; }
+  .result-box .value a { color: var(--green); text-decoration: underline; }
+  .result-actions { display: flex; gap: 8px; margin-top: 10px; }
+
+  .status-line { font-size: 11px; color: var(--muted); margin: 10px 0; text-align: center; }
+  .status-line.error { color: var(--red); }
+  .status-line.amber { color: var(--amber); }
+
+  .actions-row { display: flex; gap: 10px; justify-content: center; margin-top: 6px; }
+
+  .banner {
+    background: #1c1404;
+    color: var(--amber);
+    font-size: 10px;
+    padding: 8px 24px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  @media (max-width: 480px) {
+    .row { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="bar"></div>
+  <div>
+    <h1>DARK FIRE SECURITY</h1>
+    <p>QR TOOLKIT</p>
+  </div>
+</div>
+
+<div class="banner">
+  ⚠ Camera scanning needs HTTPS and real browser camera permission — works once deployed, may not work inside a sandboxed preview. "Upload Image" always works.
+</div>
+
+<div class="tabs">
+  <div class="tab active" data-tab="generate">GENERATE</div>
+  <div class="tab" data-tab="scan">SCAN</div>
+</div>
+
+<div class="panel">
+
+  <!-- ===================== GENERATE VIEW ===================== -->
+  <div class="view active" id="view-generate">
+
+    <div class="type-select">
+      <div class="type-btn active" data-type="text">Text / URL</div>
+      <div class="type-btn" data-type="wifi">Wi-Fi</div>
+      <div class="type-btn" data-type="contact">Contact</div>
+    </div>
+
+    <!-- Text / URL fields -->
+    <div class="type-fields" id="fields-text">
+      <div class="field">
+        <label>TEXT OR URL</label>
+        <textarea id="text-input" placeholder="https://darkfiresecurity.com">https://darkfiresecurity.com</textarea>
+      </div>
+    </div>
+
+    <!-- Wi-Fi fields -->
+    <div class="type-fields" id="fields-wifi" style="display:none;">
+      <div class="row">
+        <div class="field">
+          <label>NETWORK NAME (SSID)</label>
+          <input type="text" id="wifi-ssid" placeholder="OfficeWiFi" />
+        </div>
+        <div class="field">
+          <label>SECURITY</label>
+          <select id="wifi-security">
+            <option value="WPA">WPA / WPA2 / WPA3</option>
+            <option value="WEP">WEP</option>
+            <option value="nopass">None (open network)</option>
+          </select>
+        </div>
+      </div>
+      <div class="field" id="wifi-password-field">
+        <label>PASSWORD</label>
+        <input type="text" id="wifi-password" placeholder="network password" />
+      </div>
+      <div class="checkbox-row">
+        <input type="checkbox" id="wifi-hidden" />
+        <label for="wifi-hidden">Hidden network</label>
+      </div>
+    </div>
+
+    <!-- Contact fields -->
+    <div class="type-fields" id="fields-contact" style="display:none;">
+      <div class="row">
+        <div class="field">
+          <label>FULL NAME</label>
+          <input type="text" id="contact-name" placeholder="Chance Cummings" />
+        </div>
+        <div class="field">
+          <label>ORGANIZATION</label>
+          <input type="text" id="contact-org" placeholder="Dark Fire Security" />
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>PHONE</label>
+          <input type="tel" id="contact-phone" placeholder="+1 615 555 0100" />
+        </div>
+        <div class="field">
+          <label>EMAIL</label>
+          <input type="email" id="contact-email" placeholder="you@darkfiresecurity.com" />
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label>SIZE</label>
+        <select id="qr-size">
+          <option value="200">Small (200px)</option>
+          <option value="280" selected>Medium (280px)</option>
+          <option value="360">Large (360px)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>ERROR CORRECTION</label>
+        <select id="qr-correction">
+          <option value="L">Low</option>
+          <option value="M" selected>Medium</option>
+          <option value="Q">Quartile</option>
+          <option value="H">High</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="status-line error" id="generate-error" style="display:none;"></div>
+
+    <div class="qr-stage">
+      <div class="qr-card" id="qr-card">
+        <span class="qr-placeholder">QR preview will appear here</span>
+      </div>
+      <div class="actions-row">
+        <button class="action primary" id="btn-download" disabled>Download PNG</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== SCAN VIEW ===================== -->
+  <div class="view" id="view-scan">
+
+    <div class="scan-toggle">
+      <div class="type-btn active" data-scan="camera">Live Camera</div>
+      <div class="type-btn" data-scan="upload">Upload Image</div>
+    </div>
+
+    <div id="scan-camera">
+      <div class="video-wrap">
+        <video id="qr-video"></video>
+      </div>
+      <div class="actions-row">
+        <button class="action primary" id="btn-start-camera">Start Camera</button>
+        <button class="action secondary" id="btn-stop-camera" style="display:none;">Stop Camera</button>
+      </div>
+      <div class="status-line" id="camera-status"></div>
+    </div>
+
+    <div id="scan-upload" style="display:none;">
+      <div class="upload-zone" id="upload-zone">
+        <div id="upload-zone-text">Click to choose an image, or drag one here</div>
+        <img id="upload-preview" style="display:none;" />
+      </div>
+      <input type="file" id="upload-input" accept="image/*" style="display:none;" />
+      <div class="status-line" id="upload-status"></div>
+    </div>
+
+    <div class="result-box" id="scan-result">
+      <div class="label">DECODED CONTENT</div>
+      <div class="value" id="scan-result-value"></div>
+      <div class="result-actions">
+        <button class="action secondary" id="btn-copy-result">Copy</button>
+        <button class="action secondary" id="btn-scan-again">Scan Another</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---------------------------------------------------------------------
+  // Tab switching
+  // ---------------------------------------------------------------------
+  document.querySelectorAll(".tab").forEach(function (tab) {
+    tab.addEventListener("click", function () {
+      document.querySelectorAll(".tab").forEach(function (t) { t.classList.remove("active"); });
+      tab.classList.add("active");
+      var target = tab.getAttribute("data-tab");
+      document.getElementById("view-generate").classList.toggle("active", target === "generate");
+      document.getElementById("view-scan").classList.toggle("active", target === "scan");
+      if (target !== "scan") stopCamera();
+    });
+  });
+
+  // ---------------------------------------------------------------------
+  // GENERATE: type switching
+  // ---------------------------------------------------------------------
+  var currentType = "text";
+
+  document.querySelectorAll(".type-select .type-btn").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      document.querySelectorAll(".type-select .type-btn").forEach(function (b) { b.classList.remove("active"); });
+      btn.classList.add("active");
+      currentType = btn.getAttribute("data-type");
+      document.getElementById("fields-text").style.display = currentType === "text" ? "block" : "none";
+      document.getElementById("fields-wifi").style.display = currentType === "wifi" ? "block" : "none";
+      document.getElementById("fields-contact").style.display = currentType === "contact" ? "block" : "none";
+      regenerate();
+    });
+  });
+
+  document.getElementById("wifi-security").addEventListener("change", function () {
+    var isOpen = this.value === "nopass";
+    document.getElementById("wifi-password-field").style.display = isOpen ? "none" : "block";
+    regenerate();
+  });
+
+  // ---------------------------------------------------------------------
+  // GENERATE: string builders
+  // ---------------------------------------------------------------------
+
+  // Escape characters with special meaning in the WIFI: QR payload spec
+  function escapeWifi(str) {
+    return String(str).replace(/([\\;,:"])/g, "\\$1");
+  }
+
+  function buildWifiString() {
+    var ssid = document.getElementById("wifi-ssid").value.trim();
+    var security = document.getElementById("wifi-security").value;
+    var password = document.getElementById("wifi-password").value;
+    var hidden = document.getElementById("wifi-hidden").checked;
+    if (!ssid) return { error: "Network name (SSID) is required." };
+
+    var parts = ["WIFI:"];
+    parts.push("T:" + (security === "nopass" ? "nopass" : security) + ";");
+    parts.push("S:" + escapeWifi(ssid) + ";");
+    if (security !== "nopass") {
+      parts.push("P:" + escapeWifi(password) + ";");
+    }
+    if (hidden) parts.push("H:true;");
+    parts.push(";");
+    return { value: parts.join("") };
+  }
+
+  function buildContactString() {
+    var name = document.getElementById("contact-name").value.trim();
+    var org = document.getElementById("contact-org").value.trim();
+    var phone = document.getElementById("contact-phone").value.trim();
+    var email = document.getElementById("contact-email").value.trim();
+    if (!name) return { error: "Full name is required." };
+
+    var lines = ["BEGIN:VCARD", "VERSION:3.0", "FN:" + name];
+    if (org) lines.push("ORG:" + org);
+    if (phone) lines.push("TEL:" + phone);
+    if (email) lines.push("EMAIL:" + email);
+    lines.push("END:VCARD");
+    return { value: lines.join("\n") };
+  }
+
+  function buildTextString() {
+    var text = document.getElementById("text-input").value.trim();
+    if (!text) return { error: "Enter some text or a URL." };
+    return { value: text };
+  }
+
+  function buildPayload() {
+    if (currentType === "wifi") return buildWifiString();
+    if (currentType === "contact") return buildContactString();
+    return buildTextString();
+  }
+
+  // ---------------------------------------------------------------------
+  // GENERATE: rendering
+  // ---------------------------------------------------------------------
+  var qrCardEl = document.getElementById("qr-card");
+  var downloadBtn = document.getElementById("btn-download");
+  var errorEl = document.getElementById("generate-error");
+  var debounceTimer = null;
+
+  function showError(msg) {
+    errorEl.textContent = msg;
+    errorEl.style.display = msg ? "block" : "none";
+  }
+
+  function regenerate() {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(doGenerate, 150);
+  }
+
+  function doGenerate() {
+    var payload = buildPayload();
+    if (payload.error) {
+      showError(payload.error);
+      qrCardEl.innerHTML = '<span class="qr-placeholder">' + payload.error + '</span>';
+      downloadBtn.disabled = true;
+      return;
+    }
+    showError("");
+    qrCardEl.innerHTML = "";
+
+    var size = parseInt(document.getElementById("qr-size").value, 10);
+    var correctionKey = document.getElementById("qr-correction").value;
+    var correctLevel = QRCode.CorrectLevel[correctionKey];
+
+    try {
+      new QRCode(qrCardEl, {
+        text: payload.value,
+        width: size,
+        height: size,
+        colorDark: "#000000",
+        colorLight: "#ffffff",
+        correctLevel: correctLevel,
+      });
+      downloadBtn.disabled = false;
+    } catch (e) {
+      showError("Could not generate QR code: " + e.message);
+      downloadBtn.disabled = true;
+    }
+  }
+
+  downloadBtn.addEventListener("click", function () {
+    var canvas = qrCardEl.querySelector("canvas");
+    var img = qrCardEl.querySelector("img");
+    var dataUrl = canvas ? canvas.toDataURL("image/png") : (img ? img.src : null);
+    if (!dataUrl) return;
+    var a = document.createElement("a");
+    a.href = dataUrl;
+    a.download = "darkfire-qr.png";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  });
+
+  // wire up live regeneration on all relevant inputs
+  [
+    "text-input", "wifi-ssid", "wifi-security", "wifi-password", "wifi-hidden",
+    "contact-name", "contact-org", "contact-phone", "contact-email",
+    "qr-size", "qr-correction",
+  ].forEach(function (id) {
+    var el = document.getElementById(id);
+    el.addEventListener("input", regenerate);
+    el.addEventListener("change", regenerate);
+  });
+
+  // initial render
+  doGenerate();
+
+  // ---------------------------------------------------------------------
+  // SCAN: mode toggle (camera vs upload)
+  // ---------------------------------------------------------------------
+  document.querySelectorAll(".scan-toggle .type-btn").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      document.querySelectorAll(".scan-toggle .type-btn").forEach(function (b) { b.classList.remove("active"); });
+      btn.classList.add("active");
+      var mode = btn.getAttribute("data-scan");
+      document.getElementById("scan-camera").style.display = mode === "camera" ? "block" : "none";
+      document.getElementById("scan-upload").style.display = mode === "upload" ? "block" : "none";
+      hideResult();
+      if (mode !== "camera") stopCamera();
+    });
+  });
+
+  var resultBox = document.getElementById("scan-result");
+  var resultValue = document.getElementById("scan-result-value");
+
+  function showResult(text) {
+    resultValue.innerHTML = "";
+    var isUrl = /^https?:\/\//i.test(text);
+    if (isUrl) {
+      var a = document.createElement("a");
+      a.href = text;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.textContent = text;
+      resultValue.appendChild(a);
+    } else {
+      resultValue.textContent = text;
+    }
+    resultBox.classList.add("show");
+  }
+
+  function hideResult() {
+    resultBox.classList.remove("show");
+    resultValue.textContent = "";
+  }
+
+  document.getElementById("btn-copy-result").addEventListener("click", function () {
+    var text = resultValue.textContent || "";
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text);
+    }
+  });
+
+  document.getElementById("btn-scan-again").addEventListener("click", function () {
+    hideResult();
+    document.getElementById("upload-preview").style.display = "none";
+    document.getElementById("upload-zone-text").style.display = "block";
+    document.getElementById("upload-status").textContent = "";
+    resumeCameraIfActive();
+  });
+
+  // ---------------------------------------------------------------------
+  // SCAN: live camera
+  // ---------------------------------------------------------------------
+  var qrScanner = null;
+  var videoEl = document.getElementById("qr-video");
+  var cameraStatus = document.getElementById("camera-status");
+  var startBtn = document.getElementById("btn-start-camera");
+  var stopBtn = document.getElementById("btn-stop-camera");
+
+  function setCameraStatus(msg, isError) {
+    cameraStatus.textContent = msg || "";
+    cameraStatus.className = "status-line" + (isError ? " error" : "");
+  }
+
+  function onCameraDecode(result) {
+    var text = typeof result === "string" ? result : result.data;
+    showResult(text);
+    if (qrScanner) qrScanner.pause();
+    setCameraStatus("Found a code — tap \"Scan Another\" to keep scanning.");
+  }
+
+  startBtn.addEventListener("click", function () {
+    if (typeof QrScanner === "undefined") {
+      setCameraStatus("Scanner library failed to load.", true);
+      return;
+    }
+    setCameraStatus("Requesting camera access...");
+    qrScanner = new QrScanner(videoEl, onCameraDecode, {
+      highlightScanRegion: true,
+      highlightCodeOutline: true,
+      preferredCamera: "environment",
+      returnDetailedScanResult: true,
+    });
+    qrScanner.start().then(function () {
+      setCameraStatus("Scanning... point the camera at a QR code.");
+      startBtn.style.display = "none";
+      stopBtn.style.display = "inline-block";
+    }).catch(function (err) {
+      setCameraStatus(
+        "Camera unavailable (" + (err && err.message ? err.message : err) +
+        "). Try Upload Image instead.", true
+      );
+    });
+  });
+
+  function stopCamera() {
+    if (qrScanner) {
+      qrScanner.stop();
+      qrScanner.destroy();
+      qrScanner = null;
+    }
+    startBtn.style.display = "inline-block";
+    stopBtn.style.display = "none";
+    setCameraStatus("");
+  }
+
+  function resumeCameraIfActive() {
+    if (qrScanner) {
+      qrScanner.start();
+      setCameraStatus("Scanning... point the camera at a QR code.");
+    }
+  }
+
+  stopBtn.addEventListener("click", stopCamera);
+
+  // ---------------------------------------------------------------------
+  // SCAN: upload image
+  // ---------------------------------------------------------------------
+  var uploadZone = document.getElementById("upload-zone");
+  var uploadInput = document.getElementById("upload-input");
+  var uploadPreview = document.getElementById("upload-preview");
+  var uploadStatus = document.getElementById("upload-status");
+
+  uploadZone.addEventListener("click", function () { uploadInput.click(); });
+
+  uploadZone.addEventListener("dragover", function (e) {
+    e.preventDefault();
+    uploadZone.style.borderColor = "var(--green-dim)";
+  });
+  uploadZone.addEventListener("dragleave", function () {
+    uploadZone.style.borderColor = "";
+  });
+  uploadZone.addEventListener("drop", function (e) {
+    e.preventDefault();
+    uploadZone.style.borderColor = "";
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleUploadFile(e.dataTransfer.files[0]);
+    }
+  });
+
+  uploadInput.addEventListener("change", function () {
+    if (this.files && this.files[0]) handleUploadFile(this.files[0]);
+  });
+
+  function handleUploadFile(file) {
+    hideResult();
+    uploadStatus.textContent = "Decoding...";
+    uploadStatus.className = "status-line";
+
+    var reader = new FileReader();
+    reader.onload = function (e) {
+      uploadPreview.src = e.target.result;
+      uploadPreview.style.display = "block";
+      document.getElementById("upload-zone-text").style.display = "none";
+    };
+    reader.readAsDataURL(file);
+
+    if (typeof QrScanner === "undefined") {
+      uploadStatus.textContent = "Scanner library failed to load.";
+      uploadStatus.className = "status-line error";
+      return;
+    }
+
+    QrScanner.scanImage(file, { returnDetailedScanResult: true })
+      .then(function (result) {
+        uploadStatus.textContent = "";
+        showResult(result.data);
+      })
+      .catch(function () {
+        uploadStatus.textContent = "No QR code found in that image.";
+        uploadStatus.className = "status-line error";
+      });
+  }
+
+})();
+</script>
+
+</body>
+</html>
