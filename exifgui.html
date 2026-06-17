@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+<title>Dark Fire Security // EXIF Metadata Tool</title>
+
+<!--
+  Dark Fire Security — EXIF Metadata Tool
+
+  View, edit, and strip image metadata (EXIF/GPS, IPTC, XMP). Full
+  read/write/strip support for JPEG via piexifjs. Other formats get
+  basic info + (for PNG) text-chunk viewing, plus a universal
+  re-encode-based "Strip Metadata" that works on any format.
+
+  Libraries (cdnjs):
+    - piexifjs  https://github.com/hMatoba/piexifjs   (JPEG EXIF read/write/strip)
+    - Leaflet   https://leafletjs.com                  (GPS map view, OpenStreetMap tiles)
+-->
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/piexifjs/1.0.6/piexif.js"></script>
+
+<style>
+  :root {
+    --bg: #0b0d0e;
+    --panel: #15181b;
+    --panel-alt: #1b1f23;
+    --border: #2a2f34;
+    --text: #d7dde1;
+    --muted: #828a90;
+    --green: #1fe88f;
+    --green-dim: #15a86a;
+    --green-hover: #27ff9f;
+    --red: #ff5c5c;
+    --amber: #f0b429;
+    --mono: "Consolas", "SF Mono", "Cascadia Code", "DejaVu Sans Mono", monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--mono); min-height: 100vh; }
+
+  .header { background: var(--panel); padding: 16px 24px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--border); }
+  .header .bar { width: 3px; height: 38px; background: var(--green); }
+  .header h1 { font-size: 16px; margin: 0; color: var(--green); letter-spacing: 0.04em; }
+  .header p { font-size: 10px; margin: 2px 0 0; color: var(--muted); letter-spacing: 0.08em; }
+
+  .banner { background: #1c1404; color: var(--amber); font-size: 10px; padding: 8px 24px; border-bottom: 1px solid var(--border); }
+
+  .wrap { max-width: 820px; margin: 0 auto; padding: 20px 16px 40px; }
+
+  .upload-zone {
+    border: 1px dashed var(--border); border-radius: 8px; padding: 28px;
+    text-align: center; color: var(--muted); font-size: 12px; cursor: pointer;
+  }
+  .upload-zone:hover { border-color: var(--green-dim); }
+
+  .card {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 6px;
+    padding: 18px; margin-top: 16px;
+  }
+  .card h2 { font-size: 12px; color: var(--green); letter-spacing: 0.06em; margin: 0 0 12px; }
+
+  .preview-row { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-start; }
+  .preview-row img.main-preview { max-width: 220px; max-height: 220px; border-radius: 6px; border: 1px solid var(--border); }
+  .file-meta { font-size: 11px; color: var(--muted); line-height: 1.7; }
+  .file-meta b { color: var(--text); }
+
+  #map { height: 240px; border-radius: 6px; margin-top: 10px; border: 1px solid var(--border); }
+  .gps-coords { font-size: 12px; color: var(--green); margin-top: 8px; }
+  .gps-coords a { color: var(--green); text-decoration: underline; margin-left: 8px; }
+
+  details { margin-bottom: 8px; }
+  summary {
+    cursor: pointer; font-size: 11px; color: var(--text); padding: 8px 10px;
+    background: var(--panel-alt); border: 1px solid var(--border); border-radius: 4px;
+    list-style: none;
+  }
+  summary::-webkit-details-marker { display: none; }
+  summary:before { content: "▸ "; color: var(--green); }
+  details[open] summary:before { content: "▾ "; }
+
+  table.meta-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 11px; }
+  table.meta-table th, table.meta-table td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--border); }
+  table.meta-table th { color: var(--muted); font-weight: normal; width: 40%; }
+  table.meta-table td { color: var(--text); word-break: break-word; }
+  .no-data { color: var(--muted); font-size: 11px; padding: 8px; }
+
+  .field { margin-bottom: 12px; }
+  .field label { display: block; font-size: 10px; color: var(--muted); letter-spacing: 0.06em; margin-bottom: 5px; }
+  input[type="text"] {
+    width: 100%; background: var(--panel-alt); border: 1px solid var(--border); color: var(--text);
+    font-family: var(--mono); font-size: 13px; padding: 8px 10px; border-radius: 4px; outline: none;
+  }
+  input:focus { border-color: var(--green-dim); }
+  .row2 { display: flex; gap: 10px; }
+  .row2 > .field { flex: 1; }
+  .field-hint { font-size: 9px; color: var(--muted); margin-top: 4px; }
+
+  button.action {
+    font-family: var(--mono); font-size: 12px; border: none; border-radius: 4px;
+    padding: 10px 16px; cursor: pointer;
+  }
+  button.primary { background: var(--green); color: #06140d; font-weight: bold; }
+  button.primary:hover { background: var(--green-hover); }
+  button.secondary { background: var(--panel-alt); color: var(--text); border: 1px solid var(--border); }
+  button.secondary:hover { border-color: var(--green-dim); }
+  button.danger { background: var(--red); color: #1a0000; font-weight: bold; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .actions-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+
+  .status-line { font-size: 11px; color: var(--muted); margin-top: 10px; }
+  .status-line.error { color: var(--red); }
+  .status-line.ok { color: var(--green); }
+
+  @media (max-width: 480px) { .row2 { flex-direction: column; } }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="bar"></div>
+  <div>
+    <h1>DARK FIRE SECURITY</h1>
+    <p>EXIF METADATA TOOL</p>
+  </div>
+</div>
+
+<div class="banner">
+  ⚠ Full read/write/strip support is JPEG-only (the universal camera/phone format for GPS EXIF). Other formats get basic info, PNG text-chunk viewing, and a working "Strip Metadata" — just not field-level editing.
+</div>
+
+<div class="wrap">
+
+  <div class="upload-zone" id="upload-zone">
+    <div id="upload-zone-text">Click to choose a photo, or drag one here</div>
+  </div>
+  <input type="file" id="upload-input" accept="image/*" style="display:none;" />
+
+  <div id="content" style="display:none;">
+
+    <div class="card">
+      <h2>FILE</h2>
+      <div class="preview-row">
+        <img class="main-preview" id="main-preview" />
+        <div class="file-meta" id="file-meta"></div>
+      </div>
+    </div>
+
+    <div class="card" id="gps-card" style="display:none;">
+      <h2>LOCATION</h2>
+      <div id="map"></div>
+      <div class="gps-coords" id="gps-coords"></div>
+    </div>
+
+    <div class="card" id="metadata-card">
+      <h2>METADATA</h2>
+      <div id="metadata-sections"></div>
+    </div>
+
+    <div class="card" id="edit-card">
+      <h2>EDIT COMMON FIELDS</h2>
+      <div id="edit-form"></div>
+      <div class="status-line error" id="edit-error" style="display:none;"></div>
+      <div class="actions-row">
+        <button class="action primary" id="btn-apply-edits">Apply Edits &amp; Download</button>
+        <button class="action danger" id="btn-strip-all">Strip All Metadata &amp; Download</button>
+      </div>
+      <div class="status-line" id="action-status"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // =======================================================================
+  // State
+  // =======================================================================
+  var state = {
+    fileName: null,
+    mimeType: null,
+    width: 0,
+    height: 0,
+    fileSize: 0,
+    binaryString: null,   // raw file bytes as a binary string (for JPEG piexif ops)
+    isJpeg: false,
+    isPng: false,
+    exifDict: null,       // piexif dict for JPEG
+    pngChunks: null,      // array of {type, text} for PNG tEXt/iTXt
+    map: null,
+    marker: null,
+  };
+
+  // =======================================================================
+  // Binary <-> string helpers (piexifjs expects "binary strings")
+  // =======================================================================
+  function arrayBufferToBinaryString(buffer) {
+    var bytes = new Uint8Array(buffer);
+    var chunkSize = 0x8000;
+    var chunks = [];
+    for (var i = 0; i < bytes.length; i += chunkSize) {
+      chunks.push(String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize)));
+    }
+    return chunks.join("");
+  }
+
+  function binaryStringToBlob(binary, mime) {
+    var len = binary.length;
+    var bytes = new Uint8Array(len);
+    for (var i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i) & 0xFF;
+    return new Blob([bytes], { type: mime });
+  }
+
+  function downloadBlob(blob, filename) {
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+
+  function humanBytes(n) {
+    if (n < 1024) return n + " B";
+    if (n < 1024 * 1024) return (n / 1024).toFixed(1) + " KB";
+    return (n / (1024 * 1024)).toFixed(1) + " MB";
+  }
+
+  // =======================================================================
+  // JPEG segment-level metadata strip (EXIF/XMP via APP1, IPTC via APP13, COM)
+  // Byte-preserving for everything else, including the compressed scan data.
+  // =======================================================================
+  function stripAllMetadataJPEG(binary) {
+    if (binary.slice(0, 2) !== "\xff\xd8") {
+      throw new Error("Not a JPEG file.");
+    }
+    var result = ["\xff\xd8"];
+    var pos = 2;
+    while (pos < binary.length) {
+      if (binary.charAt(pos) !== "\xff") {
+        result.push(binary.slice(pos));
+        break;
+      }
+      var marker = binary.charCodeAt(pos + 1);
+      if (marker === 0xd9) { // EOI
+        result.push(binary.slice(pos));
+        break;
+      }
+      if (marker === 0xda) { // SOS — rest of file is scan data, copy verbatim
+        result.push(binary.slice(pos));
+        break;
+      }
+      if (marker >= 0xd0 && marker <= 0xd7) { // RST markers, no length field
+        result.push(binary.slice(pos, pos + 2));
+        pos += 2;
+        continue;
+      }
+      var len = (binary.charCodeAt(pos + 2) << 8) | binary.charCodeAt(pos + 3);
+      var segment = binary.slice(pos, pos + 2 + len);
+      var isApp1 = marker === 0xe1; // EXIF and/or XMP
+      var isApp13 = marker === 0xed; // IPTC/Photoshop
+      var isCom = marker === 0xfe;   // comment
+      if (!(isApp1 || isApp13 || isCom)) {
+        result.push(segment);
+      }
+      pos += 2 + len;
+    }
+    return result.join("");
+  }
+
+  // =======================================================================
+  // PNG text chunk reader (tEXt / iTXt), for viewing only
+  // =======================================================================
+  function readPngTextChunks(buffer) {
+    var bytes = new Uint8Array(buffer);
+    var chunks = [];
+    var pos = 8; // skip PNG signature
+    while (pos + 8 <= bytes.length) {
+      var len = (bytes[pos] << 24) | (bytes[pos + 1] << 16) | (bytes[pos + 2] << 8) | bytes[pos + 3];
+      var type = String.fromCharCode(bytes[pos + 4], bytes[pos + 5], bytes[pos + 6], bytes[pos + 7]);
+      var dataStart = pos + 8;
+      if (type === "tEXt") {
+        var slice = bytes.subarray(dataStart, dataStart + len);
+        var nullIdx = slice.indexOf(0);
+        if (nullIdx >= 0) {
+          var keyword = bytesToLatin1(slice.subarray(0, nullIdx));
+          var text = bytesToLatin1(slice.subarray(nullIdx + 1));
+          chunks.push({ type: "tEXt", keyword: keyword, text: text });
+        }
+      } else if (type === "iTXt") {
+        var slice2 = bytes.subarray(dataStart, dataStart + len);
+        var nullIdx2 = slice2.indexOf(0);
+        if (nullIdx2 >= 0) {
+          var keyword2 = bytesToLatin1(slice2.subarray(0, nullIdx2));
+          // skip compression flag, method, lang tag, translated keyword (simplified: find 2nd+3rd null)
+          var rest = slice2.subarray(nullIdx2 + 1);
+          // rest: [compression flag][compression method][lang tag]\0[translated keyword]\0[text]
+          var n1 = rest.subarray(2).indexOf(0);
+          var afterLang = rest.subarray(2 + n1 + 1);
+          var n2 = afterLang.indexOf(0);
+          var text2 = bytesToLatin1(afterLang.subarray(n2 + 1));
+          chunks.push({ type: "iTXt", keyword: keyword2, text: text2 });
+        }
+      } else if (type === "IEND") {
+        break;
+      }
+      pos = dataStart + len + 4; // skip CRC
+    }
+    return chunks;
+  }
+
+  function bytesToLatin1(bytes) {
+    var s = "";
+    for (var i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+    try { return decodeURIComponent(escape(s)); } catch (e) { return s; }
+  }
+
+  // =======================================================================
+  // Upload handling
+  // =======================================================================
+  var uploadZone = document.getElementById("upload-zone");
+  var uploadInput = document.getElementById("upload-input");
+
+  uploadZone.addEventListener("click", function () { uploadInput.click(); });
+  uploadZone.addEventListener("dragover", function (e) { e.preventDefault(); uploadZone.style.borderColor = "var(--green-dim)"; });
+  uploadZone.addEventListener("dragleave", function () { uploadZone.style.borderColor = ""; });
+  uploadZone.addEventListener("drop", function (e) {
+    e.preventDefault();
+    uploadZone.style.borderColor = "";
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+  });
+  uploadInput.addEventListener("change", function () {
+    if (this.files && this.files[0]) handleFile(this.files[0]);
+  });
+
+  function handleFile(file) {
+    var reader = new FileReader();
+    reader.onload = function (e) {
+      var buffer = e.target.result;
+      var binary = arrayBufferToBinaryString(buffer);
+
+      state.fileName = file.name;
+      state.mimeType = file.type || guessMimeFromBinary(binary);
+      state.fileSize = file.size;
+      state.binaryString = binary;
+      state.isJpeg = binary.slice(0, 2) === "\xff\xd8";
+      state.isPng = binary.slice(0, 8) === "\x89PNG\r\n\x1a\n";
+      state.exifDict = null;
+      state.pngChunks = state.isPng ? readPngTextChunks(buffer) : null;
+
+      var img = new Image();
+      img.onload = function () {
+        state.width = img.naturalWidth;
+        state.height = img.naturalHeight;
+        document.getElementById("main-preview").src = img.src;
+        renderAll();
+      };
+      img.src = "data:" + (state.mimeType || "image/jpeg") + ";base64," + btoa(binary);
+
+      document.getElementById("upload-zone-text").textContent = "Click to choose a different photo, or drag one here";
+      document.getElementById("content").style.display = "block";
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  function guessMimeFromBinary(binary) {
+    if (binary.slice(0, 2) === "\xff\xd8") return "image/jpeg";
+    if (binary.slice(0, 8) === "\x89PNG\r\n\x1a\n") return "image/png";
+    return "application/octet-stream";
+  }
+
+  // =======================================================================
+  // Render: file meta, GPS map, metadata tables, edit form
+  // =======================================================================
+  function renderAll() {
+    renderFileMeta();
+    if (state.isJpeg) {
+      try {
+        state.exifDict = piexif.load(state.binaryString);
+      } catch (e) {
+        state.exifDict = { "0th": {}, "Exif": {}, "GPS": {}, "Interop": {}, "1st": {}, "thumbnail": null };
+      }
+    }
+    renderGps();
+    renderMetadataTables();
+    renderEditForm();
+  }
+
+  function renderFileMeta() {
+    var el = document.getElementById("file-meta");
+    el.innerHTML =
+      "<b>" + escapeHtml(state.fileName) + "</b><br>" +
+      state.width + " × " + state.height + " px<br>" +
+      humanBytes(state.fileSize) + "<br>" +
+      "Format: " + (state.mimeType || "unknown") +
+      (state.isJpeg ? " (full edit support)" : state.isPng ? " (view + strip only)" : " (basic info only)");
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  function getGpsDecimal() {
+    if (!state.isJpeg || !state.exifDict || !state.exifDict.GPS) return null;
+    var gps = state.exifDict.GPS;
+    var latRef = gps[piexif.GPSIFD.GPSLatitudeRef];
+    var lat = gps[piexif.GPSIFD.GPSLatitude];
+    var lonRef = gps[piexif.GPSIFD.GPSLongitudeRef];
+    var lon = gps[piexif.GPSIFD.GPSLongitude];
+    if (!lat || !lon || !latRef || !lonRef) return null;
+    var latDeg = piexif.GPSHelper.dmsRationalToDeg(lat, latRef);
+    var lonDeg = piexif.GPSHelper.dmsRationalToDeg(lon, lonRef);
+    return { lat: latDeg, lon: lonDeg };
+  }
+
+  function renderGps() {
+    var card = document.getElementById("gps-card");
+    var coords = getGpsDecimal();
+    if (!coords) {
+      card.style.display = "none";
+      return;
+    }
+    card.style.display = "block";
+    document.getElementById("gps-coords").innerHTML =
+      coords.lat.toFixed(6) + ", " + coords.lon.toFixed(6) +
+      '<a href="https://www.openstreetmap.org/?mlat=' + coords.lat + "&mlon=" + coords.lon +
+      '&zoom=15" target="_blank" rel="noopener noreferrer">Open in OpenStreetMap</a>';
+
+    if (!state.map) {
+      L.Icon.Default.mergeOptions({
+        imagePath: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/",
+      });
+      state.map = L.map("map").setView([coords.lat, coords.lon], 15);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "&copy; OpenStreetMap contributors",
+        maxZoom: 19,
+      }).addTo(state.map);
+      state.marker = L.marker([coords.lat, coords.lon]).addTo(state.map);
+    } else {
+      state.map.setView([coords.lat, coords.lon], 15);
+      state.marker.setLatLng([coords.lat, coords.lon]);
+    }
+    setTimeout(function () { if (state.map) state.map.invalidateSize(); }, 100);
+  }
+
+  function tagName(category, tagNum) {
+    var dict = category === "0th" || category === "1st" ? piexif.TAGS["Image"] : piexif.TAGS[category];
+    if (dict && dict[tagNum]) return dict[tagNum].name;
+    return "Tag " + tagNum;
+  }
+
+  function tagType(category, tagNum) {
+    var dict = category === "0th" || category === "1st" ? piexif.TAGS["Image"] : piexif.TAGS[category];
+    if (dict && dict[tagNum]) return dict[tagNum].type;
+    return null;
+  }
+
+  function formatTagValue(category, tagNum, value) {
+    var type = tagType(category, tagNum);
+    if (typeof value === "string") {
+      return value.replace(/\u0000+$/, "").trim() || "(empty)";
+    }
+    if (Array.isArray(value)) {
+      // rational pair [num, den], or array of such pairs
+      if (value.length === 2 && typeof value[0] === "number" && typeof value[1] === "number") {
+        var num = value[0], den = value[1];
+        if (den === 0) return num + "/0";
+        var dec = num / den;
+        return num + "/" + den + (den !== 1 ? " (\u2248" + dec.toFixed(3) + ")" : "");
+      }
+      return value.map(function (v) { return formatTagValue(category, tagNum, v); }).join(", ");
+    }
+    if (type === "Undefined") {
+      return "<binary data>";
+    }
+    return String(value);
+  }
+
+  function renderMetadataTables() {
+    var container = document.getElementById("metadata-sections");
+    container.innerHTML = "";
+
+    if (state.isJpeg && state.exifDict) {
+      var sections = [
+        { key: "0th", label: "IMAGE (0th IFD)" },
+        { key: "Exif", label: "CAMERA / EXIF" },
+        { key: "GPS", label: "GPS" },
+        { key: "Interop", label: "INTEROPERABILITY" },
+        { key: "1st", label: "THUMBNAIL IFD" },
+      ];
+      var anySection = false;
+      sections.forEach(function (s) {
+        var data = state.exifDict[s.key];
+        var keys = data ? Object.keys(data) : [];
+        if (keys.length === 0) return;
+        anySection = true;
+        var det = document.createElement("details");
+        var summary = document.createElement("summary");
+        summary.textContent = s.label + " (" + keys.length + " tags)";
+        det.appendChild(summary);
+        var table = document.createElement("table");
+        table.className = "meta-table";
+        keys.forEach(function (k) {
+          var tr = document.createElement("tr");
+          var th = document.createElement("th");
+          th.textContent = tagName(s.key, k);
+          var td = document.createElement("td");
+          td.textContent = formatTagValue(s.key, k, data[k]);
+          tr.appendChild(th);
+          tr.appendChild(td);
+          table.appendChild(tr);
+        });
+        det.appendChild(table);
+        container.appendChild(det);
+      });
+
+      if (state.exifDict.thumbnail) {
+        anySection = true;
+        var det2 = document.createElement("details");
+        var summary2 = document.createElement("summary");
+        summary2.textContent = "EMBEDDED THUMBNAIL";
+        det2.appendChild(summary2);
+        var img = document.createElement("img");
+        img.style.maxWidth = "160px";
+        img.style.borderRadius = "4px";
+        img.style.marginTop = "8px";
+        img.src = "data:image/jpeg;base64," + btoa(state.exifDict.thumbnail);
+        det2.appendChild(img);
+        container.appendChild(det2);
+      }
+
+      if (!anySection) {
+        container.innerHTML = '<div class="no-data">No EXIF metadata found in this JPEG.</div>';
+      }
+    } else if (state.isPng) {
+      if (state.pngChunks && state.pngChunks.length > 0) {
+        var det3 = document.createElement("details");
+        det3.open = true;
+        var summary3 = document.createElement("summary");
+        summary3.textContent = "PNG TEXT CHUNKS (" + state.pngChunks.length + ")";
+        det3.appendChild(summary3);
+        var table3 = document.createElement("table");
+        table3.className = "meta-table";
+        state.pngChunks.forEach(function (c) {
+          var tr = document.createElement("tr");
+          var th = document.createElement("th");
+          th.textContent = c.keyword + " (" + c.type + ")";
+          var td = document.createElement("td");
+          td.textContent = c.text;
+          tr.appendChild(th);
+          tr.appendChild(td);
+          table3.appendChild(tr);
+        });
+        det3.appendChild(table3);
+        container.appendChild(det3);
+      } else {
+        container.innerHTML = '<div class="no-data">No text metadata chunks found in this PNG. (PNG files generally don\'t carry GPS/EXIF data.)</div>';
+      }
+    } else {
+      container.innerHTML = '<div class="no-data">Detailed metadata reading is only supported for JPEG (and basic text chunks for PNG). This file\'s format isn\'t parsed in depth, but Strip Metadata will still work.</div>';
+    }
+  }
+
+  // =======================================================================
+  // Edit form (JPEG only)
+  // =======================================================================
+  var EDIT_FIELDS = [
+    { id: "edit-make", ifd: "0th", tag: 271, label: "CAMERA MAKE" },
+    { id: "edit-model", ifd: "0th", tag: 272, label: "CAMERA MODEL" },
+    { id: "edit-software", ifd: "0th", tag: 305, label: "SOFTWARE" },
+    { id: "edit-artist", ifd: "0th", tag: 315, label: "ARTIST" },
+    { id: "edit-copyright", ifd: "0th", tag: 33432, label: "COPYRIGHT" },
+    { id: "edit-datetime", ifd: "Exif", tag: 36867, label: "DATE TAKEN (YYYY:MM:DD HH:MM:SS)" },
+  ];
+
+  function renderEditForm() {
+    var form = document.getElementById("edit-form");
+    form.innerHTML = "";
+
+    if (!state.isJpeg) {
+      form.innerHTML = '<div class="no-data">Field editing is only available for JPEG files. You can still strip all metadata below for any format.</div>';
+      document.getElementById("btn-apply-edits").disabled = true;
+      return;
+    }
+    document.getElementById("btn-apply-edits").disabled = false;
+
+    EDIT_FIELDS.forEach(function (f) {
+      var current = state.exifDict[f.ifd][f.tag];
+      var value = typeof current === "string" ? current.replace(/\u0000+$/, "") : "";
+      var div = document.createElement("div");
+      div.className = "field";
+      div.innerHTML =
+        '<label>' + f.label + '</label>' +
+        '<input type="text" id="' + f.id + '" value="' + escapeHtml(value) + '" placeholder="(not set)" />';
+      form.appendChild(div);
+    });
+
+    var coords = getGpsDecimal();
+    var gpsRow = document.createElement("div");
+    gpsRow.className = "row2";
+    gpsRow.innerHTML =
+      '<div class="field"><label>GPS LATITUDE (decimal)</label>' +
+      '<input type="text" id="edit-lat" value="' + (coords ? coords.lat.toFixed(6) : "") + '" placeholder="e.g. 36.1627" /></div>' +
+      '<div class="field"><label>GPS LONGITUDE (decimal)</label>' +
+      '<input type="text" id="edit-lon" value="' + (coords ? coords.lon.toFixed(6) : "") + '" placeholder="e.g. -86.7816" /></div>';
+    form.appendChild(gpsRow);
+    var hint = document.createElement("div");
+    hint.className = "field-hint";
+    hint.textContent = "Clear a field and apply to remove that tag entirely (e.g. clear both GPS fields to strip just the location).";
+    form.appendChild(hint);
+  }
+
+  // =======================================================================
+  // Apply edits
+  // =======================================================================
+  document.getElementById("btn-apply-edits").addEventListener("click", function () {
+    var errorEl = document.getElementById("edit-error");
+    var statusEl = document.getElementById("action-status");
+    errorEl.style.display = "none";
+    statusEl.textContent = "";
+
+    try {
+      var newDict = JSON.parse(JSON.stringify(state.exifDict));
+      // JSON round-trip turns numeric-string keys back to strings, which is fine — piexif uses them as object keys either way.
+
+      EDIT_FIELDS.forEach(function (f) {
+        var val = document.getElementById(f.id).value;
+        if (val.trim() === "") {
+          delete newDict[f.ifd][f.tag];
+        } else {
+          newDict[f.ifd][f.tag] = val;
+        }
+      });
+
+      var latStr = document.getElementById("edit-lat").value.trim();
+      var lonStr = document.getElementById("edit-lon").value.trim();
+      if (latStr === "" || lonStr === "") {
+        newDict.GPS = {};
+      } else {
+        var lat = parseFloat(latStr), lon = parseFloat(lonStr);
+        if (isNaN(lat) || isNaN(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+          throw new Error("GPS coordinates must be valid decimal degrees (lat -90..90, lon -180..180).");
+        }
+        newDict.GPS[piexif.GPSIFD.GPSLatitudeRef] = lat >= 0 ? "N" : "S";
+        newDict.GPS[piexif.GPSIFD.GPSLatitude] = piexif.GPSHelper.degToDmsRational(lat);
+        newDict.GPS[piexif.GPSIFD.GPSLongitudeRef] = lon >= 0 ? "E" : "W";
+        newDict.GPS[piexif.GPSIFD.GPSLongitude] = piexif.GPSHelper.degToDmsRational(lon);
+      }
+
+      var exifBytes = piexif.dump(newDict);
+      var newBinary = piexif.insert(exifBytes, state.binaryString);
+
+      // refresh state from the new binary so the view reflects what was saved
+      state.binaryString = newBinary;
+      state.exifDict = piexif.load(newBinary);
+      document.getElementById("main-preview").src = "data:image/jpeg;base64," + btoa(newBinary);
+      renderGps();
+      renderMetadataTables();
+      renderEditForm();
+
+      downloadBlob(binaryStringToBlob(newBinary, "image/jpeg"), withSuffix(state.fileName, "-edited"));
+      statusEl.className = "status-line ok";
+      statusEl.textContent = "Edits applied and downloaded.";
+    } catch (e) {
+      errorEl.textContent = e.message || "Could not apply edits.";
+      errorEl.style.display = "block";
+    }
+  });
+
+  document.getElementById("btn-strip-all").addEventListener("click", function () {
+    var statusEl = document.getElementById("action-status");
+    var errorEl = document.getElementById("edit-error");
+    errorEl.style.display = "none";
+    try {
+      var strippedBinary, blob;
+      if (state.isJpeg) {
+        strippedBinary = stripAllMetadataJPEG(state.binaryString);
+        blob = binaryStringToBlob(strippedBinary, "image/jpeg");
+      } else {
+        // universal fallback: re-encode via canvas, which drops all ancillary chunks
+        var canvas = document.createElement("canvas");
+        canvas.width = state.width;
+        canvas.height = state.height;
+        var ctx = canvas.getContext("2d");
+        var img = document.getElementById("main-preview");
+        ctx.drawImage(img, 0, 0);
+        var outMime = state.isPng ? "image/png" : "image/png"; // normalize unknowns to PNG too
+        var dataUrl = canvas.toDataURL(outMime);
+        var base64 = dataUrl.split(",")[1];
+        strippedBinary = atob(base64);
+        blob = binaryStringToBlob(strippedBinary, outMime);
+      }
+      downloadBlob(blob, withSuffix(state.fileName, "-stripped"));
+
+      if (state.isJpeg) {
+        state.binaryString = strippedBinary;
+        state.exifDict = piexif.load(strippedBinary);
+        document.getElementById("main-preview").src = "data:image/jpeg;base64," + btoa(strippedBinary);
+        renderGps();
+        renderMetadataTables();
+        renderEditForm();
+      }
+
+      statusEl.className = "status-line ok";
+      statusEl.textContent = "All metadata stripped and downloaded.";
+    } catch (e) {
+      errorEl.textContent = e.message || "Could not strip metadata.";
+      errorEl.style.display = "block";
+    }
+  });
+
+  function withSuffix(filename, suffix) {
+    var dot = filename.lastIndexOf(".");
+    if (dot === -1) return filename + suffix;
+    return filename.slice(0, dot) + suffix + filename.slice(dot);
+  }
+
+})();
+</script>
+
+</body>
+</html>
