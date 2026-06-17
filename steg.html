@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+<title>Dark Fire Security // Image Steganography</title>
+
+<!--
+  Dark Fire Security — Image Steganography
+
+  Hides a text message inside an image using least-significant-bit (LSB)
+  encoding across the R/G/B channels, with an optional AES-256-GCM
+  passphrase layer (via the browser's native WebCrypto) for real
+  encryption rather than just obscurity.
+
+  No external libraries — pure Canvas + WebCrypto. Output is always PNG;
+  JPEG re-compression would destroy the hidden bits.
+
+  Payload format embedded in the LSBs (all big-endian):
+    [2 bytes magic 0xDF 0x5E] [4 bytes payload length] [payload...]
+  Payload:
+    [1 byte flag: 0=plain, 1=encrypted]
+    plain:     [message UTF-8 bytes]
+    encrypted: [16 bytes salt][12 bytes iv][ciphertext (incl. 16-byte GCM tag)]
+-->
+
+<style>
+  :root {
+    --bg: #0b0d0e;
+    --panel: #15181b;
+    --panel-alt: #1b1f23;
+    --border: #2a2f34;
+    --text: #d7dde1;
+    --muted: #828a90;
+    --green: #1fe88f;
+    --green-dim: #15a86a;
+    --green-hover: #27ff9f;
+    --red: #ff5c5c;
+    --amber: #f0b429;
+    --mono: "Consolas", "SF Mono", "Cascadia Code", "DejaVu Sans Mono", monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    min-height: 100vh;
+  }
+
+  .header {
+    background: var(--panel);
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .header .bar { width: 3px; height: 38px; background: var(--green); }
+  .header h1 { font-size: 16px; margin: 0; color: var(--green); letter-spacing: 0.04em; }
+  .header p { font-size: 10px; margin: 2px 0 0; color: var(--muted); letter-spacing: 0.08em; }
+
+  .banner {
+    background: #1c1404;
+    color: var(--amber);
+    font-size: 10px;
+    padding: 8px 24px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .tabs {
+    display: flex;
+    gap: 8px;
+    padding: 16px 24px 0;
+    max-width: 720px;
+    margin: 0 auto;
+  }
+  .tab {
+    flex: 1;
+    text-align: center;
+    padding: 10px 0;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    border-radius: 4px 4px 0 0;
+  }
+  .tab.active { color: var(--green); border-color: var(--green-dim); background: var(--panel-alt); }
+
+  .panel {
+    max-width: 720px;
+    margin: 0 auto;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 0 0 6px 6px;
+    padding: 20px;
+  }
+  .view { display: none; }
+  .view.active { display: block; }
+
+  .field { margin-bottom: 14px; }
+  .field label {
+    display: block;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    margin-bottom: 6px;
+  }
+  input[type="text"], input[type="password"], textarea {
+    width: 100%;
+    background: var(--panel-alt);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    padding: 9px 10px;
+    border-radius: 4px;
+    outline: none;
+  }
+  input:focus, textarea:focus { border-color: var(--green-dim); }
+  textarea { resize: vertical; min-height: 90px; }
+
+  .upload-zone {
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 22px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 12px;
+    cursor: pointer;
+    margin-bottom: 14px;
+  }
+  .upload-zone:hover { border-color: var(--green-dim); }
+  .upload-zone img { max-width: 100%; max-height: 200px; margin-top: 12px; border-radius: 4px; }
+  .upload-meta { font-size: 10px; color: var(--muted); margin-top: 8px; }
+
+  .checkbox-row { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+  .checkbox-row input { width: auto; }
+  .checkbox-row label { font-size: 11px; color: var(--text); margin: 0; }
+
+  .capacity-bar-track {
+    background: var(--panel-alt);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    height: 8px;
+    overflow: hidden;
+    margin-top: 6px;
+  }
+  .capacity-bar-fill { height: 100%; background: var(--green); width: 0%; transition: width 0.15s; }
+  .capacity-bar-fill.over { background: var(--red); }
+  .capacity-label { font-size: 10px; color: var(--muted); margin-top: 4px; }
+  .capacity-label.over { color: var(--red); }
+
+  button.action {
+    font-family: var(--mono);
+    font-size: 12px;
+    border: none;
+    border-radius: 4px;
+    padding: 11px 18px;
+    cursor: pointer;
+  }
+  button.primary { background: var(--green); color: #06140d; font-weight: bold; }
+  button.primary:hover { background: var(--green-hover); }
+  button.secondary { background: var(--panel-alt); color: var(--text); border: 1px solid var(--border); }
+  button.secondary:hover { border-color: var(--green-dim); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .actions-row { display: flex; gap: 10px; justify-content: center; margin-top: 14px; flex-wrap: wrap; }
+
+  .status-line { font-size: 11px; color: var(--muted); margin: 10px 0; text-align: center; }
+  .status-line.error { color: var(--red); }
+  .status-line.ok { color: var(--green); }
+
+  .result-stage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    margin-top: 18px;
+  }
+  .result-stage img { max-width: 100%; border-radius: 8px; border: 1px solid var(--green-dim); }
+
+  .result-box {
+    margin-top: 16px;
+    background: var(--panel-alt);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px;
+    display: none;
+  }
+  .result-box.show { display: block; }
+  .result-box .label { font-size: 10px; color: var(--muted); letter-spacing: 0.08em; margin-bottom: 6px; }
+  .result-box .value { font-size: 13px; color: var(--green); white-space: pre-wrap; word-break: break-word; }
+  .result-actions { display: flex; gap: 8px; margin-top: 10px; }
+
+  @media (max-width: 480px) {
+    .row { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+  <li><a href="index.html" class="home-link">← Home</a></li>
+<div class="header">
+  <div class="bar"></div>
+  <div>
+    <h1>DARK FIRE SECURITY</h1>
+    <p>IMAGE STEGANOGRAPHY</p>
+  </div>
+</div>
+
+<div class="banner">
+  ⚠ Output is always PNG — JPEG re-compression destroys hidden data. Hiding ≠ encrypting: use a passphrase below for real AES-256-GCM protection, not just obscurity.
+</div>
+
+<div class="tabs">
+  <div class="tab active" data-tab="hide">HIDE</div>
+  <div class="tab" data-tab="reveal">REVEAL</div>
+</div>
+
+<div class="panel">
+
+  <!-- ===================== HIDE VIEW ===================== -->
+  <div class="view active" id="view-hide">
+
+    <div class="upload-zone" id="hide-upload-zone">
+      <div id="hide-upload-text">Click to choose a cover image, or drag one here</div>
+      <img id="hide-upload-preview" style="display:none;" />
+      <div class="upload-meta" id="hide-upload-meta"></div>
+    </div>
+    <input type="file" id="hide-upload-input" accept="image/*" style="display:none;" />
+
+    <div class="field">
+      <label>SECRET MESSAGE</label>
+      <textarea id="hide-message" placeholder="Type the message to hide inside the image..."></textarea>
+      <div class="capacity-bar-track"><div class="capacity-bar-fill" id="capacity-fill"></div></div>
+      <div class="capacity-label" id="capacity-label">Load a cover image to see capacity.</div>
+    </div>
+
+    <div class="checkbox-row">
+      <input type="checkbox" id="hide-encrypt-toggle" />
+      <label for="hide-encrypt-toggle">Encrypt with passphrase (AES-256-GCM)</label>
+    </div>
+    <div class="field" id="hide-passphrase-field" style="display:none;">
+      <label>PASSPHRASE</label>
+      <input type="password" id="hide-passphrase" placeholder="Choose a strong passphrase" />
+    </div>
+
+    <div class="status-line error" id="hide-error" style="display:none;"></div>
+
+    <div class="actions-row">
+      <button class="action primary" id="btn-hide" disabled>Hide Message</button>
+    </div>
+
+    <div class="result-stage" id="hide-result" style="display:none;">
+      <img id="stego-preview" />
+      <div class="actions-row">
+        <button class="action primary" id="btn-download-stego">Download PNG</button>
+        <button class="action secondary" id="btn-show-diff">Show Difference (amplified)</button>
+      </div>
+      <img id="diff-preview" style="display:none;" />
+      <div class="status-line" id="diff-note" style="display:none;">
+        Amplified ×40 so the change is visible here — at normal viewing the two images are indistinguishable.
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== REVEAL VIEW ===================== -->
+  <div class="view" id="view-reveal">
+
+    <div class="upload-zone" id="reveal-upload-zone">
+      <div id="reveal-upload-text">Click to choose an image to check, or drag one here</div>
+      <img id="reveal-upload-preview" style="display:none;" />
+      <div class="upload-meta" id="reveal-upload-meta"></div>
+    </div>
+    <input type="file" id="reveal-upload-input" accept="image/*" style="display:none;" />
+
+    <div class="field">
+      <label>PASSPHRASE (only if the sender used one)</label>
+      <input type="password" id="reveal-passphrase" placeholder="Leave blank if not encrypted" />
+    </div>
+
+    <div class="status-line error" id="reveal-error" style="display:none;"></div>
+
+    <div class="actions-row">
+      <button class="action primary" id="btn-reveal" disabled>Reveal Message</button>
+    </div>
+
+    <div class="result-box" id="reveal-result">
+      <div class="label">DECODED MESSAGE</div>
+      <div class="value" id="reveal-result-value"></div>
+      <div class="result-actions">
+        <button class="action secondary" id="btn-copy-reveal">Copy</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // =======================================================================
+  // Tab switching
+  // =======================================================================
+  document.querySelectorAll(".tab").forEach(function (tab) {
+    tab.addEventListener("click", function () {
+      document.querySelectorAll(".tab").forEach(function (t) { t.classList.remove("active"); });
+      tab.classList.add("active");
+      var target = tab.getAttribute("data-tab");
+      document.getElementById("view-hide").classList.toggle("active", target === "hide");
+      document.getElementById("view-reveal").classList.toggle("active", target === "reveal");
+    });
+  });
+
+  // =======================================================================
+  // Bit-level helpers (shared by hide + reveal)
+  // =======================================================================
+  var MAGIC_0 = 0xDF;
+  var MAGIC_1 = 0x5E;
+  var HEADER_BYTES = 6; // 2 magic + 4 length
+
+  function bytesToBits(bytes) {
+    var bits = new Array(bytes.length * 8);
+    var idx = 0;
+    for (var i = 0; i < bytes.length; i++) {
+      for (var b = 7; b >= 0; b--) {
+        bits[idx++] = (bytes[i] >> b) & 1;
+      }
+    }
+    return bits;
+  }
+
+  function bitsToBytes(bits) {
+    var byteCount = Math.floor(bits.length / 8);
+    var bytes = new Uint8Array(byteCount);
+    for (var i = 0; i < byteCount; i++) {
+      var v = 0;
+      for (var b = 0; b < 8; b++) {
+        v = (v << 1) | bits[i * 8 + b];
+      }
+      bytes[i] = v;
+    }
+    return bytes;
+  }
+
+  function uint32ToBytes(n) {
+    return [(n >>> 24) & 0xFF, (n >>> 16) & 0xFF, (n >>> 8) & 0xFF, n & 0xFF];
+  }
+
+  function bytesToUint32(bytes, offset) {
+    return (
+      ((bytes[offset] << 24) |
+        (bytes[offset + 1] << 16) |
+        (bytes[offset + 2] << 8) |
+        bytes[offset + 3]) >>> 0
+    );
+  }
+
+  function imageCapacityBits(width, height) {
+    return Math.floor(width * height) * 3; // 1 LSB each in R, G, B per pixel
+  }
+
+  function embedBitsIntoImageData(imageData, bits) {
+    var data = imageData.data;
+    var bitIdx = 0;
+    for (var p = 0; p < data.length && bitIdx < bits.length; p += 4) {
+      for (var c = 0; c < 3 && bitIdx < bits.length; c++) {
+        data[p + c] = (data[p + c] & 0xFE) | bits[bitIdx];
+        bitIdx++;
+      }
+    }
+    if (bitIdx < bits.length) {
+      throw new Error("Image is too small to hold this message.");
+    }
+  }
+
+  function extractBitsFromImageData(imageData, numBits) {
+    var data = imageData.data;
+    var bits = new Array(numBits);
+    var bitIdx = 0;
+    for (var p = 0; p < data.length && bitIdx < numBits; p += 4) {
+      for (var c = 0; c < 3 && bitIdx < numBits; c++) {
+        bits[bitIdx] = data[p + c] & 1;
+        bitIdx++;
+      }
+    }
+    return bits;
+  }
+
+  // overhead in bytes: 2 magic + 4 length + 1 flag (+ 16 salt + 12 iv + 16 gcm tag if encrypted)
+  function overheadBytes(encrypted) {
+    return HEADER_BYTES + 1 + (encrypted ? 16 + 12 + 16 : 0);
+  }
+
+  function maxMessageBytes(width, height, encrypted) {
+    var capBytes = Math.floor(imageCapacityBits(width, height) / 8);
+    return Math.max(0, capBytes - overheadBytes(encrypted));
+  }
+
+  // =======================================================================
+  // WebCrypto: AES-256-GCM with a passphrase, key derived via PBKDF2
+  // =======================================================================
+  function deriveKey(passphrase, salt) {
+    var enc = new TextEncoder();
+    return crypto.subtle
+      .importKey("raw", enc.encode(passphrase), { name: "PBKDF2" }, false, ["deriveKey"])
+      .then(function (keyMaterial) {
+        return crypto.subtle.deriveKey(
+          { name: "PBKDF2", salt: salt, iterations: 150000, hash: "SHA-256" },
+          keyMaterial,
+          { name: "AES-GCM", length: 256 },
+          false,
+          ["encrypt", "decrypt"]
+        );
+      });
+  }
+
+  // =======================================================================
+  // Encode: build the full bitstream payload (with header) for a message
+  // =======================================================================
+  function buildPayload(message, passphrase) {
+    var msgBytes = new TextEncoder().encode(message);
+
+    if (passphrase) {
+      var salt = crypto.getRandomValues(new Uint8Array(16));
+      var iv = crypto.getRandomValues(new Uint8Array(12));
+      return deriveKey(passphrase, salt).then(function (key) {
+        return crypto.subtle.encrypt({ name: "AES-GCM", iv: iv }, key, msgBytes).then(function (cipherBuf) {
+          var cipher = new Uint8Array(cipherBuf);
+          var body = new Uint8Array(1 + 16 + 12 + cipher.length);
+          body[0] = 1;
+          body.set(salt, 1);
+          body.set(iv, 17);
+          body.set(cipher, 29);
+          return finishPayload(body);
+        });
+      });
+    } else {
+      var body = new Uint8Array(1 + msgBytes.length);
+      body[0] = 0;
+      body.set(msgBytes, 1);
+      return Promise.resolve(finishPayload(body));
+    }
+  }
+
+  function finishPayload(body) {
+    var header = new Uint8Array(HEADER_BYTES);
+    header[0] = MAGIC_0;
+    header[1] = MAGIC_1;
+    var lenBytes = uint32ToBytes(body.length);
+    header.set(lenBytes, 2);
+    var full = new Uint8Array(header.length + body.length);
+    full.set(header, 0);
+    full.set(body, header.length);
+    return full;
+  }
+
+  // =======================================================================
+  // Decode: read header + payload back out of pixel data
+  // =======================================================================
+  var ERR_NO_MESSAGE = "No hidden message detected in this image.";
+  var ERR_PASSPHRASE_REQUIRED = "PASSPHRASE_REQUIRED";
+
+  function revealFromImageData(imageData, passphrase) {
+    var capBits = imageCapacityBits(imageData.width, imageData.height);
+    if (capBits < HEADER_BYTES * 8) {
+      return Promise.reject(new Error(ERR_NO_MESSAGE));
+    }
+    var headerBits = extractBitsFromImageData(imageData, HEADER_BYTES * 8);
+    var headerBytes = bitsToBytes(headerBits);
+
+    if (headerBytes[0] !== MAGIC_0 || headerBytes[1] !== MAGIC_1) {
+      return Promise.reject(new Error(ERR_NO_MESSAGE));
+    }
+    var payloadLen = bytesToUint32(headerBytes, 2);
+    var capBytes = Math.floor(capBits / 8);
+    if (payloadLen < 1 || payloadLen > capBytes - HEADER_BYTES) {
+      return Promise.reject(new Error(ERR_NO_MESSAGE));
+    }
+
+    var totalBits = HEADER_BYTES * 8 + payloadLen * 8;
+    var allBits = extractBitsFromImageData(imageData, totalBits);
+    var payloadBits = allBits.slice(HEADER_BYTES * 8);
+    var payload = bitsToBytes(payloadBits);
+
+    var flag = payload[0];
+    if (flag === 1) {
+      if (!passphrase) {
+        return Promise.reject(new Error(ERR_PASSPHRASE_REQUIRED));
+      }
+      var salt = payload.slice(1, 17);
+      var iv = payload.slice(17, 29);
+      var cipher = payload.slice(29);
+      return deriveKey(passphrase, salt)
+        .then(function (key) {
+          return crypto.subtle.decrypt({ name: "AES-GCM", iv: iv }, key, cipher);
+        })
+        .then(function (plainBuf) {
+          return new TextDecoder().decode(plainBuf);
+        })
+        .catch(function (e) {
+          if (e && e.message === ERR_PASSPHRASE_REQUIRED) throw e;
+          throw new Error("Incorrect passphrase, or this image's hidden data is corrupted.");
+        });
+    } else {
+      var msgBytes = payload.slice(1);
+      return Promise.resolve(new TextDecoder().decode(msgBytes));
+    }
+  }
+
+  // =======================================================================
+  // Shared: load an image file into a canvas
+  // =======================================================================
+  function loadImageFileToCanvas(file) {
+    return new Promise(function (resolve, reject) {
+      var img = new Image();
+      var reader = new FileReader();
+      reader.onerror = function () { reject(new Error("Could not read that file.")); };
+      reader.onload = function (e) {
+        img.onload = function () {
+          var canvas = document.createElement("canvas");
+          canvas.width = img.naturalWidth;
+          canvas.height = img.naturalHeight;
+          var ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0);
+          resolve({ canvas: canvas, ctx: ctx, width: canvas.width, height: canvas.height, dataUrl: e.target.result });
+        };
+        img.onerror = function () { reject(new Error("That file doesn't look like a valid image.")); };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function humanBytes(n) {
+    if (n < 1024) return n + " B";
+    if (n < 1024 * 1024) return (n / 1024).toFixed(1) + " KB";
+    return (n / (1024 * 1024)).toFixed(1) + " MB";
+  }
+
+  // =======================================================================
+  // HIDE tab wiring
+  // =======================================================================
+  var hideCover = null; // { canvas, ctx, width, height, originalImageData }
+  var hideUploadZone = document.getElementById("hide-upload-zone");
+  var hideUploadInput = document.getElementById("hide-upload-input");
+  var hideUploadPreview = document.getElementById("hide-upload-preview");
+  var hideUploadMeta = document.getElementById("hide-upload-meta");
+  var hideMessageEl = document.getElementById("hide-message");
+  var hideErrorEl = document.getElementById("hide-error");
+  var btnHide = document.getElementById("btn-hide");
+  var capacityFill = document.getElementById("capacity-fill");
+  var capacityLabel = document.getElementById("capacity-label");
+  var encryptToggle = document.getElementById("hide-encrypt-toggle");
+  var passphraseField = document.getElementById("hide-passphrase-field");
+  var hidePassphraseEl = document.getElementById("hide-passphrase");
+
+  hideUploadZone.addEventListener("click", function () { hideUploadInput.click(); });
+  hideUploadZone.addEventListener("dragover", function (e) { e.preventDefault(); hideUploadZone.style.borderColor = "var(--green-dim)"; });
+  hideUploadZone.addEventListener("dragleave", function () { hideUploadZone.style.borderColor = ""; });
+  hideUploadZone.addEventListener("drop", function (e) {
+    e.preventDefault();
+    hideUploadZone.style.borderColor = "";
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) loadHideCover(e.dataTransfer.files[0]);
+  });
+  hideUploadInput.addEventListener("change", function () {
+    if (this.files && this.files[0]) loadHideCover(this.files[0]);
+  });
+
+  function loadHideCover(file) {
+    showHideError("");
+    loadImageFileToCanvas(file)
+      .then(function (loaded) {
+        var ctx = loaded.ctx;
+        var originalImageData = ctx.getImageData(0, 0, loaded.width, loaded.height);
+        hideCover = {
+          canvas: loaded.canvas,
+          ctx: ctx,
+          width: loaded.width,
+          height: loaded.height,
+          originalImageData: originalImageData,
+        };
+        hideUploadPreview.src = loaded.dataUrl;
+        hideUploadPreview.style.display = "block";
+        document.getElementById("hide-upload-text").style.display = "none";
+        hideUploadMeta.textContent = loaded.width + " × " + loaded.height + " px";
+        document.getElementById("hide-result").style.display = "none";
+        updateCapacityUI();
+      })
+      .catch(function (e) { showHideError(e.message); });
+  }
+
+  function showHideError(msg) {
+    hideErrorEl.textContent = msg;
+    hideErrorEl.style.display = msg ? "block" : "none";
+  }
+
+  function updateCapacityUI() {
+    if (!hideCover) {
+      capacityLabel.textContent = "Load a cover image to see capacity.";
+      capacityFill.style.width = "0%";
+      btnHide.disabled = true;
+      return;
+    }
+    var encrypted = encryptToggle.checked;
+    var maxBytes = maxMessageBytes(hideCover.width, hideCover.height, encrypted);
+    var usedBytes = new TextEncoder().encode(hideMessageEl.value).length;
+    var pct = maxBytes > 0 ? Math.min(100, (usedBytes / maxBytes) * 100) : 100;
+    var over = usedBytes > maxBytes || maxBytes <= 0;
+
+    capacityFill.style.width = pct + "%";
+    capacityFill.classList.toggle("over", over);
+    capacityLabel.classList.toggle("over", over);
+    capacityLabel.textContent = humanBytes(usedBytes) + " / " + humanBytes(maxBytes) + " capacity used" +
+      (over ? " — message is too large for this image" : "");
+
+    var hasMessage = hideMessageEl.value.trim().length > 0;
+    var passOk = !encrypted || hidePassphraseEl.value.length > 0;
+    btnHide.disabled = !hasMessage || over || !passOk;
+  }
+
+  hideMessageEl.addEventListener("input", updateCapacityUI);
+  encryptToggle.addEventListener("change", function () {
+    passphraseField.style.display = this.checked ? "block" : "none";
+    updateCapacityUI();
+  });
+  hidePassphraseEl.addEventListener("input", updateCapacityUI);
+
+  btnHide.addEventListener("click", function () {
+    if (!hideCover) return;
+    showHideError("");
+    btnHide.disabled = true;
+    btnHide.textContent = "Hiding...";
+
+    var message = hideMessageEl.value;
+    var passphrase = encryptToggle.checked ? hidePassphraseEl.value : null;
+
+    buildPayload(message, passphrase)
+      .then(function (fullBytes) {
+        var bits = bytesToBits(fullBytes);
+        // clone the pristine original pixels so repeated hides don't stack on stego data
+        var working = new ImageData(
+          new Uint8ClampedArray(hideCover.originalImageData.data),
+          hideCover.width,
+          hideCover.height
+        );
+        embedBitsIntoImageData(working, bits);
+
+        var resultCanvas = document.createElement("canvas");
+        resultCanvas.width = hideCover.width;
+        resultCanvas.height = hideCover.height;
+        resultCanvas.getContext("2d").putImageData(working, 0, 0);
+
+        var dataUrl = resultCanvas.toDataURL("image/png");
+        document.getElementById("stego-preview").src = dataUrl;
+        document.getElementById("hide-result").style.display = "flex";
+        document.getElementById("diff-preview").style.display = "none";
+        document.getElementById("diff-note").style.display = "none";
+        document.getElementById("btn-show-diff").textContent = "Show Difference (amplified)";
+
+        window.__lastStego = { dataUrl: dataUrl, working: working, original: hideCover.originalImageData, width: hideCover.width, height: hideCover.height };
+      })
+      .catch(function (e) {
+        showHideError(e.message || "Could not hide the message in this image.");
+      })
+      .finally(function () {
+        btnHide.disabled = false;
+        btnHide.textContent = "Hide Message";
+        updateCapacityUI();
+      });
+  });
+
+  document.getElementById("btn-download-stego").addEventListener("click", function () {
+    if (!window.__lastStego) return;
+    var a = document.createElement("a");
+    a.href = window.__lastStego.dataUrl;
+    a.download = "darkfire-stego.png";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  });
+
+  document.getElementById("btn-show-diff").addEventListener("click", function () {
+    var diffImg = document.getElementById("diff-preview");
+    var diffNote = document.getElementById("diff-note");
+    var btn = document.getElementById("btn-show-diff");
+    if (diffImg.style.display === "block") {
+      diffImg.style.display = "none";
+      diffNote.style.display = "none";
+      btn.textContent = "Show Difference (amplified)";
+      return;
+    }
+    var s = window.__lastStego;
+    if (!s) return;
+    var diffCanvas = document.createElement("canvas");
+    diffCanvas.width = s.width;
+    diffCanvas.height = s.height;
+    var dctx = diffCanvas.getContext("2d");
+    var diffData = dctx.createImageData(s.width, s.height);
+    var orig = s.original.data, mod = s.working.data, out = diffData.data;
+    var AMPLIFY = 40;
+    for (var i = 0; i < orig.length; i += 4) {
+      out[i] = Math.min(255, Math.abs(orig[i] - mod[i]) * AMPLIFY);
+      out[i + 1] = Math.min(255, Math.abs(orig[i + 1] - mod[i + 1]) * AMPLIFY);
+      out[i + 2] = Math.min(255, Math.abs(orig[i + 2] - mod[i + 2]) * AMPLIFY);
+      out[i + 3] = 255;
+    }
+    dctx.putImageData(diffData, 0, 0);
+    diffImg.src = diffCanvas.toDataURL("image/png");
+    diffImg.style.display = "block";
+    diffNote.style.display = "block";
+    btn.textContent = "Hide Difference View";
+  });
+
+  // =======================================================================
+  // REVEAL tab wiring
+  // =======================================================================
+  var revealLoaded = null; // { ctx, width, height }
+  var revealUploadZone = document.getElementById("reveal-upload-zone");
+  var revealUploadInput = document.getElementById("reveal-upload-input");
+  var revealUploadPreview = document.getElementById("reveal-upload-preview");
+  var revealUploadMeta = document.getElementById("reveal-upload-meta");
+  var revealErrorEl = document.getElementById("reveal-error");
+  var btnReveal = document.getElementById("btn-reveal");
+  var revealResultBox = document.getElementById("reveal-result");
+  var revealResultValue = document.getElementById("reveal-result-value");
+
+  revealUploadZone.addEventListener("click", function () { revealUploadInput.click(); });
+  revealUploadZone.addEventListener("dragover", function (e) { e.preventDefault(); revealUploadZone.style.borderColor = "var(--green-dim)"; });
+  revealUploadZone.addEventListener("dragleave", function () { revealUploadZone.style.borderColor = ""; });
+  revealUploadZone.addEventListener("drop", function (e) {
+    e.preventDefault();
+    revealUploadZone.style.borderColor = "";
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) loadRevealImage(e.dataTransfer.files[0]);
+  });
+  revealUploadInput.addEventListener("change", function () {
+    if (this.files && this.files[0]) loadRevealImage(this.files[0]);
+  });
+
+  function loadRevealImage(file) {
+    showRevealError("");
+    hideRevealResult();
+    loadImageFileToCanvas(file)
+      .then(function (loaded) {
+        revealLoaded = { ctx: loaded.ctx, width: loaded.width, height: loaded.height };
+        revealUploadPreview.src = loaded.dataUrl;
+        revealUploadPreview.style.display = "block";
+        document.getElementById("reveal-upload-text").style.display = "none";
+        revealUploadMeta.textContent = loaded.width + " × " + loaded.height + " px";
+        btnReveal.disabled = false;
+      })
+      .catch(function (e) { showRevealError(e.message); });
+  }
+
+  function showRevealError(msg) {
+    revealErrorEl.textContent = msg;
+    revealErrorEl.style.display = msg ? "block" : "none";
+  }
+
+  function hideRevealResult() {
+    revealResultBox.classList.remove("show");
+    revealResultValue.textContent = "";
+  }
+
+  btnReveal.addEventListener("click", function () {
+    if (!revealLoaded) return;
+    showRevealError("");
+    hideRevealResult();
+    btnReveal.disabled = true;
+    btnReveal.textContent = "Revealing...";
+
+    var imageData = revealLoaded.ctx.getImageData(0, 0, revealLoaded.width, revealLoaded.height);
+    var passphrase = document.getElementById("reveal-passphrase").value || null;
+
+    revealFromImageData(imageData, passphrase)
+      .then(function (message) {
+        revealResultValue.textContent = message;
+        revealResultBox.classList.add("show");
+      })
+      .catch(function (e) {
+        if (e.message === ERR_PASSPHRASE_REQUIRED) {
+          showRevealError("This image contains an encrypted message — enter the passphrase above and try again.");
+        } else {
+          showRevealError(e.message || "Could not reveal a message from this image.");
+        }
+      })
+      .finally(function () {
+        btnReveal.disabled = false;
+        btnReveal.textContent = "Reveal Message";
+      });
+  });
+
+  document.getElementById("btn-copy-reveal").addEventListener("click", function () {
+    var text = revealResultValue.textContent || "";
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text);
+    }
+  });
+
+})();
+</script>
+
+</body>
+</html>
