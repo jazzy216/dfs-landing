@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Is the Best Tool You Own — Until It Replaces You | Dark Fire Security</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:         #0a0d12;
+      --bg-2:       #11151c;
+      --bg-3:       #161b24;
+      --accent:     #3da9fc;
+      --accent-dim: #1f7fd1;
+      --accent-glow:rgba(61,169,252,0.12);
+      --text:       #e2e8f0;
+      --text-muted: #64748b;
+      --text-dim:   #94a3b8;
+      --border:     rgba(61,169,252,0.15);
+      --border-dim: rgba(255,255,255,0.06);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Geist', sans-serif;
+      font-size: 17px;
+      line-height: 1.78;
+      min-height: 100dvh;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* Grid texture */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(61,169,252,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(61,169,252,0.025) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      top: -250px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 700px;
+      height: 500px;
+      background: radial-gradient(ellipse, rgba(61,169,252,0.05) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(10,13,18,0.9);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+    }
+
+    .nav-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 58px;
+    }
+
+    .nav-logo {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.85rem;
+      color: var(--accent);
+      text-decoration: none;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+
+    .nav-logo span { color: var(--text-muted); }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 1.75rem;
+      list-style: none;
+    }
+
+    .nav-links a {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover { color: var(--accent); }
+
+    /* ── MAIN ── */
+    main {
+      position: relative;
+      z-index: 1;
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 4.5rem 2rem 8rem;
+    }
+
+    /* ── POST HEADER ── */
+    .post-header { margin-bottom: 3rem; }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.68rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      text-decoration: none;
+      margin-bottom: 2.5rem;
+      transition: color 0.2s;
+    }
+
+    .back-link::before { content: '←'; }
+    .back-link:hover { color: var(--accent); }
+
+    .post-category {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.68rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 1.25rem;
+    }
+
+    .post-category::before {
+      content: '';
+      display: block;
+      width: 5px;
+      height: 5px;
+      background: var(--accent);
+      border-radius: 50%;
+      animation: blink 2.5s ease-in-out infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.3; }
+    }
+
+    .post-title {
+      font-size: clamp(1.9rem, 4.5vw, 2.75rem);
+      font-weight: 600;
+      color: #fff;
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+      margin-bottom: 1.1rem;
+    }
+
+    .post-title em {
+      font-style: normal;
+      color: var(--accent);
+    }
+
+    .post-subtitle {
+      font-size: 1.05rem;
+      color: var(--text-dim);
+      line-height: 1.65;
+      max-width: 58ch;
+      margin-bottom: 2rem;
+    }
+
+    .post-byline {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border-dim);
+    }
+
+    .byline-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--bg-3);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--accent);
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .byline-name {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text);
+      display: block;
+    }
+
+    .byline-date {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      letter-spacing: 0.06em;
+      display: block;
+      margin-top: 2px;
+    }
+
+    /* ── DIVIDER ── */
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border-dim);
+      margin: 2.75rem 0;
+    }
+
+    /* ── BODY CONTENT ── */
+    .post-body p {
+      color: var(--text-dim);
+      margin-bottom: 1.6rem;
+      max-width: 68ch;
+    }
+
+    .post-body p strong {
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .post-body h2 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #fff;
+      letter-spacing: -0.01em;
+      margin: 3rem 0 1rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .post-body h2::before {
+      content: '//';
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--accent);
+      font-weight: 400;
+      letter-spacing: 0.1em;
+    }
+
+    /* Pull quote */
+    .pull-quote {
+      border-left: 2px solid var(--accent);
+      margin: 2.5rem 0;
+      padding: 1.2rem 1.75rem;
+      background: rgba(61,169,252,0.04);
+      border-radius: 0 4px 4px 0;
+    }
+
+    .pull-quote p {
+      font-size: 1.08rem;
+      color: var(--text) !important;
+      font-style: italic;
+      line-height: 1.65;
+      margin-bottom: 0 !important;
+      max-width: none !important;
+    }
+
+    /* Callout box */
+    .callout {
+      background: rgba(61,169,252,0.04);
+      border: 1px solid rgba(61,169,252,0.18);
+      border-radius: 6px;
+      padding: 1.25rem 1.5rem;
+      margin: 2.5rem 0;
+    }
+
+    .callout-label {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.63rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.6rem;
+    }
+
+    .callout p {
+      color: var(--text-dim) !important;
+      margin-bottom: 0 !important;
+      font-size: 0.92rem;
+      max-width: none !important;
+    }
+
+    /* Verdict list */
+    .verdict-list {
+      list-style: none;
+      margin: 1.5rem 0 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+
+    .verdict-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      font-size: 0.93rem;
+      color: var(--text-dim);
+      line-height: 1.6;
+    }
+
+    .tag {
+      flex-shrink: 0;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.6rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 3px;
+      margin-top: 3px;
+    }
+
+    .tag.go     { background: rgba(61,169,252,0.1);  color: var(--accent); border: 1px solid rgba(61,169,252,0.25); }
+    .tag.caution{ background: rgba(255,200,50,0.08); color: #ffc832;       border: 1px solid rgba(255,200,50,0.2); }
+    .tag.no     { background: rgba(255,70,70,0.08);  color: #ff5555;       border: 1px solid rgba(255,70,70,0.2); }
+    .tag.unsure { background: rgba(150,150,150,0.08);color: #94a3b8;       border: 1px solid rgba(150,150,150,0.2); }
+
+    /* ── FOOTER ── */
+    footer {
+      position: relative;
+      z-index: 1;
+      border-top: 1px solid var(--border-dim);
+      padding: 2.5rem 2rem;
+    }
+
+    .footer-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .footer-brand {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--accent);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+
+    .footer-tagline {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      letter-spacing: 0.1em;
+    }
+
+    /* ── ANIMATION ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .post-header { animation: fadeUp 0.5s ease both; }
+    .post-body   { animation: fadeUp 0.5s ease 0.12s both; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 640px) {
+      main { padding: 2.5rem 1.25rem 6rem; }
+      .nav-links { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <div class="nav-inner">
+      <a class="nav-logo" href="index.html">Dark Fire <span>Security</span></a>
+      <ul class="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="resources.html">Resources</a></li>
+        <li><a href="blog.html">Blog</a></li>
+        <li><a href="index.html#contact">Contact</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- ARTICLE -->
+  <main>
+    <div class="post-header">
+      <a class="back-link" href="blog.html">Back to Blog</a>
+
+      <div class="post-category">Threat Intelligence &amp; Industry Perspective</div>
+
+      <h1 class="post-title">
+        AI Is the Best Tool You Own —<br/>
+        <em>Until It Replaces You</em>
+      </h1>
+
+      <p class="post-subtitle">
+        A field technician's unfiltered take on where AI is incredible, where it gets dangerous, and where it has no business being at all.
+      </p>
+
+      <div class="post-byline">
+        <div class="byline-avatar">CC</div>
+        <div>
+          <span class="byline-name">Chance Cummings</span>
+          <span class="byline-date">Founder, Dark Fire Security &nbsp;·&nbsp; June 2026</span>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider" />
+
+    <article class="post-body">
+
+      <p>
+        It's strange to think about how normal AI has become. Not long ago, I stumbled across it out of curiosity — used it for business, dabbled before I was even deep into tech. When GPT-3 dropped, I genuinely didn't think it would grow into what it is now. Then it started generating images, and that blew my mind. Now we've got code generation, video synthesis, voice-to-text, text-to-voice — an entire ecosystem of tools that can assist with nearly anything you throw at them.
+      </p>
+
+      <p>
+        I've been using AI almost every day for the last three years. I've learned how to work with it, push it, and yes — in the older model days — how to manipulate it. Jailbreaking the early stuff wasn't hard. The newer models are a different story. But uncensored open-source models exist for those who go looking. No guardrails. No boundaries. Just raw capability trained on whatever data they were fed.
+      </p>
+
+      <p>And that's exactly where things start to get complicated.</p>
+
+      <h2>Tool vs. Crutch</h2>
+
+      <p>
+        The most dangerous thing about AI isn't that it can be weaponized — it's that it can make you <strong>intellectually lazy without you even noticing.</strong> If you use it not as a tool to extend your thinking, but as a replacement for thinking altogether, it will only carry you so far.
+      </p>
+
+      <div class="pull-quote">
+        <p>"AI amplifies capability. It doesn't manufacture it out of nothing. At some point, the absence of real skill catches up with you."</p>
+      </div>
+
+      <p>
+        Use it to work smarter. Use it to go farther, faster. But the moment it becomes your brain instead of your assistant, you've handed over the one thing no model can replicate — your own judgment, built from actual experience.
+      </p>
+
+      <h2>Privacy: The Profile You're Building</h2>
+
+      <p>
+        Here's what I can't ignore from a cybersecurity standpoint: every conversation you have with ChatGPT, Meta AI, Grok, or any commercial model is <strong>data</strong>. It builds a profile. And that profile can be collected, analyzed, and monetized.
+      </p>
+
+      <p>
+        People share personal details, business strategies, medical questions, and private thoughts with these systems without a second thought. Running a local model is the cleaner option for anyone serious about data hygiene — but even then, absolute anonymity online is nearly impossible.
+      </p>
+
+      <div class="callout">
+        <div class="callout-label">Security Note</div>
+        <p>
+          If someone with the right resources and motivation wants to find you or compromise your operation, they likely can. True digital privacy takes serious money, time, and discipline. Basic operational security, though? That's doable for any business willing to learn — and that's exactly what we help with at Dark Fire.
+        </p>
+      </div>
+
+      <h2>Where I Draw the Line</h2>
+
+      <p>I think AI is going to be enormous for our future — in the right roles. But there are hard limits on where it belongs:</p>
+
+      <ul class="verdict-list">
+        <li>
+          <span class="tag go">Go</span>
+          Code generation, video, creative work — as long as it's not stealing someone's likeness or being used to defame real people.
+        </li>
+        <li>
+          <span class="tag caution">Caution</span>
+          Self-driving cars. Cool concept. Still too many failure modes in the real world for my comfort.
+        </li>
+        <li>
+          <span class="tag unsure">Uncertain</span>
+          AI-guided military precision. Anyone who claims certainty on this probably isn't thinking hard enough about it.
+        </li>
+        <li>
+          <span class="tag no">Hard No</span>
+          Law, sentencing, and judgments that affect people's freedom. AI should not be anywhere near those decisions. Not now. Possibly not ever without a fundamentally different accountability framework.
+        </li>
+      </ul>
+
+      <h2>The Frontier — And the Hype</h2>
+
+      <p>
+        The recent buzz around frontier models — systems powerful enough that labs are pulling them back from public access before release — raises real questions. Genuine capability at a new order of magnitude, or strategic positioning? Probably some of both.
+      </p>
+
+      <p>
+        What I do know is that the question even needs to be asked, which tells you something about where we are. The pace is not slowing down. The capability curve is not flattening. And most small businesses — the people I work with every day — have no idea what's coming or how to protect themselves from the risks that ride alongside the benefits.
+      </p>
+
+      <h2>The Bottom Line</h2>
+
+      <p>
+        AI is an extraordinary assistant. In the right hands, with human judgment firmly in the loop, it's one of the most powerful tools ever created. The problem isn't the technology itself — it's the temptation to hand it the wheel entirely.
+      </p>
+
+      <div class="pull-quote">
+        <p>"Build with it. Learn from it. Let it accelerate you. But keep your own mind sharp — that's the edge no model can replace."</p>
+      </div>
+
+      <p>
+        For small businesses especially: AI is not a magic fix, and it's not something to fear. It's a tool, like any other. The question is whether you're using it — or whether it's using you.
+      </p>
+
+      <p>That's the question Dark Fire Security helps you answer.</p>
+
+    </article>
+  </main>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-inner">
+      <span class="footer-brand">Dark Fire Security</span>
+      <span class="footer-tagline">Faith &nbsp;·&nbsp; Technology &nbsp;·&nbsp; Protection</span>
+    </div>
+  </footer>
+
+</body>
+</html>
