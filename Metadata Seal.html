@@ -1,0 +1,1041 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Metadata Seal</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: narrow spec column on the left, one framed workbench on the right; single column on phones with the tool directly under the headline. */
+:root{
+  color-scheme:dark;
+  --bg:#0a0c0f;
+  --panel:#101318;
+  --panel-2:#161a21;
+  --line:#222832;
+  --line-strong:#313a48;
+  --fg:#e6e9ee;
+  --dim:#9aa3b0;
+  --faint:#7a8493;
+  --accent:#4d8fe6;
+  --accent-wash:#4d8fe61c;
+  --on-accent:#06101f;
+  --warn:#d6a24a;
+  --warn-wash:#d6a24a1c;
+  --ok:#5fb58c;
+  --ok-wash:#5fb58c1c;
+  --bad:#e2695d;
+  --sans:'Geist','Avenir Next','Segoe UI',system-ui,sans-serif;
+  --mono:'Geist Mono',ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+  --ease:cubic-bezier(.16,1,.3,1);
+}
+*,*::before,*::after{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;background:radial-gradient(900px 520px at 12% -8%,#4d8fe614,transparent 70%)}
+h1,h2,h3,p,dl,dd,ol,ul{margin:0}
+ol,ul{padding:0;list-style:none}
+a{color:var(--accent);text-underline-offset:3px}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.page{position:relative;max-width:1240px;margin-inline:auto;padding-inline:clamp(16px,4vw,40px);padding-block:18px 56px;display:flex;flex-direction:column;gap:clamp(28px,5vw,60px)}
+
+.top{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:6px 24px;padding-bottom:14px;border-bottom:1px solid var(--line)}
+.brand{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px}
+.brand b{font-weight:700;font-size:12px;letter-spacing:.2em}
+.brand span{font-family:var(--mono);font-size:12px;color:var(--accent)}
+.local{font-family:var(--mono);font-size:12px;color:var(--dim)}
+
+.grid{display:grid;grid-template-columns:minmax(0,1fr);grid-template-areas:"head" "bench" "spec";gap:26px}
+.head{grid-area:head;display:flex;flex-direction:column;gap:14px}
+.spec{grid-area:spec}
+.bench{grid-area:bench}
+@media (min-width:980px){
+  .grid{grid-template-columns:minmax(0,5fr) minmax(0,7fr);grid-template-rows:auto 1fr;grid-template-areas:"head bench" "spec bench";column-gap:64px;row-gap:36px}
+  .head{padding-top:28px}
+}
+h1{font-size:clamp(28px,4.2vw,46px);line-height:1.04;letter-spacing:-.035em;font-weight:600;text-wrap:balance}
+h1 em{font-style:normal;color:var(--accent)}
+.lede{color:var(--dim);font-size:16px;max-width:46ch}
+
+.label{font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+.spec dl{margin-top:10px;border-top:1px solid var(--line)}
+.spec dl div{display:grid;grid-template-columns:7.5rem minmax(0,1fr);gap:12px;padding-block:9px;border-bottom:1px solid var(--line)}
+.spec dt{color:var(--dim);font-size:13px}
+.spec dd{font-family:var(--mono);font-size:13px;overflow-wrap:anywhere}
+
+/* workbench */
+.bench{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:inset 0 1px 0 #ffffff0a,0 30px 60px -40px #04070c;min-width:0;transition:border-color .2s var(--ease)}
+.bench.drag{border-color:var(--accent)}
+.block{padding:18px clamp(16px,3vw,24px);border-top:1px solid var(--line);display:flex;flex-direction:column;gap:12px;min-width:0}
+.block:first-child{border-top:0}
+.block h2{font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+
+.filebar{display:grid;grid-template-columns:84px minmax(0,1fr);gap:14px;align-items:center}
+.thumb{width:84px;aspect-ratio:1;border-radius:8px;overflow:hidden;background:var(--panel-2);border:1px solid var(--line)}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.fileinfo{display:flex;flex-direction:column;gap:5px;min-width:0}
+.fname{font-weight:600;overflow-wrap:anywhere;line-height:1.3}
+.fmeta{font-family:var(--mono);font-size:12px;color:var(--dim);font-variant-numeric:tabular-nums}
+.pills{display:flex;flex-wrap:wrap;gap:6px}
+.pill{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:99px;border:1px solid var(--line-strong);color:var(--dim)}
+.pill.exposed{color:var(--warn);border-color:var(--warn);background:var(--warn-wash)}
+.pill.sealed{color:var(--accent);border-color:var(--accent);background:var(--accent-wash)}
+.pill.clean{color:var(--ok);border-color:var(--ok);background:var(--ok-wash)}
+.pick{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px}
+.pick small{color:var(--faint);font-size:12.5px}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border-radius:9px;border:1px solid var(--line-strong);background:var(--panel-2);font-weight:600;font-size:14px;cursor:pointer;position:relative;overflow:hidden;transition:transform .15s var(--ease),background .2s var(--ease),border-color .2s var(--ease)}
+.btn:hover{border-color:var(--faint)}
+.btn:active{transform:scale(.98)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn.primary:hover{background:#63a0f0;border-color:#63a0f0}
+.btn.small{min-height:34px;padding:0 12px;font-size:13px}
+.btn[disabled]{opacity:.55;cursor:default;transform:none}
+.btn.busy::after{content:"";position:absolute;inset:auto 0 0 0;height:2px;background:linear-gradient(90deg,transparent,var(--on-accent),transparent);animation:slide 1.1s linear infinite}
+@keyframes slide{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+
+.map{display:flex;flex-wrap:wrap;gap:6px}
+.map li{font-family:var(--mono);font-size:11.5px;line-height:1.3;padding:4px 7px;border-radius:5px;border:1px solid var(--line);color:var(--dim);white-space:nowrap;font-variant-numeric:tabular-nums;animation:rise .45s var(--ease) both;animation-delay:calc(var(--i,0)*28ms)}
+.map li i{font-style:normal;color:var(--faint);margin-left:6px}
+.map li.meta{border-color:var(--warn);color:var(--warn);background:var(--warn-wash)}
+.map li.meta i{color:var(--warn)}
+.map li.cap{border-color:var(--accent);background:var(--accent);color:var(--on-accent);font-weight:500}
+.map li.cap i{color:var(--on-accent)}
+@keyframes rise{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.hint{font-size:13px;color:var(--faint);max-width:62ch}
+
+.readout{display:flex;flex-direction:column}
+.readout div{display:grid;grid-template-columns:8.5rem minmax(0,1fr);gap:12px;padding-block:8px;border-top:1px solid var(--line)}
+.readout div:first-child{border-top:0;padding-top:0}
+.readout dt{color:var(--dim);font-size:13px}
+.readout dd{font-family:var(--mono);font-size:13px;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.readout dd.cipher{color:var(--accent)}
+.readout dd a{margin-left:8px;font-family:var(--sans)}
+.skel{height:14px;border-radius:4px;background:linear-gradient(90deg,var(--panel-2),var(--line),var(--panel-2));background-size:200% 100%;animation:shimmer 1.4s linear infinite}
+@keyframes shimmer{to{background-position:-200% 0}}
+@media (max-width:420px){.readout div{grid-template-columns:6.5rem minmax(0,1fr)}}
+
+.field{display:flex;flex-direction:column;gap:8px}
+.field label{font-size:13px;font-weight:500}
+.field input[type=password],.field input[type=text]{width:100%;min-height:44px;padding:0 12px;border-radius:9px;border:1px solid var(--line-strong);background:var(--bg);font-family:var(--mono);font-size:14px}
+.field input:focus{outline:2px solid var(--accent);outline-offset:0;border-color:var(--accent)}
+.help{font-size:12.5px;color:var(--faint)}
+.err{font-size:13px;color:var(--bad)}
+.row{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center}
+.check{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;color:var(--dim)}
+.check input{width:18px;height:18px;margin:2px 0 0;accent-color:var(--accent);flex:none}
+.fields{display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
+@media (min-width:640px){.fields.two{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+
+.banner{background:var(--accent-wash);border-top:1px solid var(--accent)}
+.banner.warn{background:var(--warn-wash);border-top-color:var(--warn)}
+.banner strong{font-size:17px;font-weight:600;letter-spacing:-.01em}
+.banner p{color:var(--fg);font-size:14px;max-width:60ch}
+.banner code{font-family:var(--mono);font-size:12.5px;color:var(--dim);overflow-wrap:anywhere}
+
+/* notes */
+.notes{display:grid;grid-template-columns:minmax(0,1fr);gap:36px;padding-top:clamp(24px,4vw,40px);border-top:1px solid var(--line)}
+@media (min-width:980px){.notes{grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:72px}}
+.notes h2{font-size:22px;font-weight:600;letter-spacing:-.02em;margin-bottom:14px}
+.steps{counter-reset:s;display:flex;flex-direction:column}
+.steps li{counter-increment:s;display:grid;grid-template-columns:2.2rem minmax(0,1fr);gap:8px;padding-block:13px;border-top:1px solid var(--line);color:var(--dim);max-width:68ch}
+.steps li::before{content:counter(s,decimal-leading-zero);font-family:var(--mono);font-size:12px;color:var(--accent);padding-top:3px}
+.steps b{color:var(--fg);font-weight:600}
+.limits{display:flex;flex-direction:column}
+.limits li{padding-block:12px;border-top:1px solid var(--line);color:var(--dim);font-size:14px}
+.limits b{color:var(--fg);font-weight:600;display:block}
+.foot{display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px 24px;font-size:12.5px;color:var(--faint);border-top:1px solid var(--line);padding-top:16px}
+
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="page">
+  <header class="top">
+    <div class="brand"><b>DARK FIRE SECURITY</b><span>metadata-seal</span></div>
+    <div class="local">Runs in this browser. Nothing is uploaded.</div>
+  </header>
+
+  <main class="grid">
+    <section class="head">
+      <h1>Lock what a photo says about you. <em>Keep the photo.</em></h1>
+      <p class="lede">Location, device and timestamps are encrypted inside the file with a passphrase. The picture still opens anywhere. The passphrase puts every byte back.</p>
+    </section>
+
+    <section class="bench" id="bench" aria-label="Seal workbench">
+      <div class="block">
+        <div class="filebar">
+          <div class="thumb"><img id="preview" alt="Preview of the loaded photo"></div>
+          <div class="fileinfo">
+            <div class="fname" id="fname">Loading sample photo</div>
+            <div class="fmeta" id="fmeta">&nbsp;</div>
+            <div class="pills" id="pills"></div>
+          </div>
+        </div>
+        <div class="pick">
+          <button class="btn small" type="button" id="pickBtn">Choose a photo</button>
+          <small id="pickNote">JPEG or PNG. Drop or paste one here too.</small>
+          <input type="file" id="fileInput" accept="image/jpeg,image/png" hidden>
+        </div>
+        <p class="err" id="fileErr" role="alert" hidden></p>
+      </div>
+
+      <div class="block banner" id="banner" aria-live="polite" hidden>
+        <strong id="bannerTitle"></strong>
+        <p id="bannerBody"></p>
+        <code id="bannerCode" hidden></code>
+        <div class="row">
+          <button class="btn primary" type="button" id="saveBtn">Save photo</button>
+          <span class="help" id="saveNote"></span>
+        </div>
+      </div>
+
+      <div class="block">
+        <h2>File structure</h2>
+        <ol class="map" id="map"></ol>
+        <p class="hint" id="mapHint"></p>
+      </div>
+
+      <div class="block">
+        <h2 id="readTitle">What this file gives away</h2>
+        <dl class="readout" id="readout">
+          <div><dt><span class="skel" style="display:block;width:70%"></span></dt><dd><span class="skel" style="display:block;width:85%"></span></dd></div>
+          <div><dt><span class="skel" style="display:block;width:50%"></span></dt><dd><span class="skel" style="display:block;width:60%"></span></dd></div>
+          <div><dt><span class="skel" style="display:block;width:60%"></span></dt><dd><span class="skel" style="display:block;width:75%"></span></dd></div>
+        </dl>
+      </div>
+
+      <form class="block" id="form" novalidate>
+        <h2 id="formTitle">Seal it</h2>
+        <div class="fields two" id="fields">
+          <div class="field">
+            <label for="pass">Passphrase</label>
+            <input type="password" id="pass" autocomplete="off" autocapitalize="off" spellcheck="false">
+          </div>
+          <div class="field" id="confirmField">
+            <label for="pass2">Repeat passphrase</label>
+            <input type="password" id="pass2" autocomplete="off" autocapitalize="off" spellcheck="false">
+          </div>
+        </div>
+        <p class="help" id="passHelp">Use at least 8 characters. A sentence of four or more words is harder to guess than a short mix of symbols.</p>
+        <p class="err" id="formErr" role="alert" hidden></p>
+        <div class="row">
+          <label class="check"><input type="checkbox" id="showPass"><span>Show passphrase</span></label>
+          <button class="btn small" type="button" id="genBtn">Generate one</button>
+          <button class="btn small" type="button" id="copyBtn" hidden>Copy</button>
+        </div>
+        <label class="check" id="orientRow" hidden><input type="checkbox" id="keepOrient" checked><span>Leave the rotation flag readable so the sealed photo is not shown sideways.</span></label>
+        <div class="row">
+          <button class="btn primary" type="submit" id="goBtn">Seal metadata</button>
+        </div>
+      </form>
+
+      <div class="block" id="empty" hidden>
+        <h2>Nothing to seal</h2>
+        <p class="hint">This file carries no metadata. Choose another photo, or use the one you have as it is.</p>
+      </div>
+    </section>
+
+    <section class="spec">
+      <div class="label">Specification</div>
+      <dl>
+        <div><dt>Cipher</dt><dd>AES-256-GCM</dd></div>
+        <div><dt>Key</dt><dd>PBKDF2-SHA256, 600,000 rounds, 128-bit salt</dd></div>
+        <div><dt>Formats</dt><dd>JPEG, PNG</dd></div>
+        <div><dt>Picture data</dt><dd>copied bit for bit, never re-encoded</dd></div>
+        <div><dt>Restore check</dt><dd>SHA-256 of the original file</dd></div>
+        <div><dt>Network</dt><dd>none</dd></div>
+      </dl>
+    </section>
+  </main>
+
+  <section class="notes">
+    <div>
+      <h2>How the seal works</h2>
+      <ol class="steps">
+        <li><span><b>The file is split into its parts.</b> Everything the picture does not need is pulled out: Exif and GPS, XMP, IPTC, comments, embedded thumbnails, and anything stored after the image.</span></li>
+        <li><span><b>Those parts are encrypted.</b> Your passphrase runs through 600,000 rounds of PBKDF2-SHA256 with a fresh random salt, and the resulting key encrypts the parts with AES-256-GCM.</span></li>
+        <li><span><b>The ciphertext goes back into the file</b> as one private block that photo viewers skip. The compressed picture data is copied as it is.</span></li>
+        <li><span><b>Unsealing puts every part back where it was</b> and compares the result with a SHA-256 of the original, so you know the file is identical.</span></li>
+      </ol>
+    </div>
+    <div>
+      <h2>What it does not do</h2>
+      <ul class="limits">
+        <li><b>It does not change the picture.</b>A street sign or house number in the frame is still in the frame.</li>
+        <li><b>It does not hide that a seal exists.</b>Anyone can see an encrypted block and its size, rounded up to the next kilobyte.</li>
+        <li><b>It does not survive re-encoding.</b>Social networks and most messaging apps rebuild photos on upload and drop the block. Send sealed photos as files: email attachment, shared drive, USB.</li>
+        <li><b>It cannot recover a lost passphrase.</b>The photo still opens. The metadata stays locked.</li>
+        <li><b>It does not read HEIC, RAW or video.</b>JPEG and PNG only.</li>
+      </ul>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <span>Dark Fire Security</span>
+    <a href="https://darkfiresecurity.com">darkfiresecurity.com</a>
+  </footer>
+</div>
+
+<script id="engine">
+/* Seal engine. No DOM access: runs in a browser or in Node 20+. */
+const DFSeal = (() => {
+  'use strict';
+  const ITER = 600000, PAD = 1024, CHUNK = 65000, VERSION = 1;
+  const enc = new TextEncoder();
+  const lat = new TextDecoder('latin1');
+  const utf = new TextDecoder('utf-8');
+  const JID = enc.encode('DFSEAL\0');
+  const PNG_SIG = [137, 80, 78, 71, 13, 10, 26, 10];
+  const PNG_CAP = 'seAl';
+  const PNG_KEEP = new Set(['IHDR', 'PLTE', 'IDAT', 'IEND', 'cHRM', 'gAMA', 'iCCP', 'sBIT', 'sRGB', 'bKGD', 'hIST', 'tRNS', 'pHYs', 'sPLT', 'cICP', 'mDCV', 'cLLI', 'acTL', 'fcTL', 'fdAT']);
+  const JNAME = { 0xDB: 'DQT', 0xC4: 'DHT', 0xDD: 'DRI', 0xC0: 'SOF0', 0xC1: 'SOF1', 0xC2: 'SOF2', 0xCC: 'DAC' };
+
+  function fail(code, message) { const e = new Error(message); e.code = code; return e; }
+  function u8(x) { return x instanceof Uint8Array ? x : new Uint8Array(x); }
+  function cat(list) {
+    let n = 0; for (const p of list) n += p.length;
+    const out = new Uint8Array(n); let k = 0;
+    for (const p of list) { out.set(p, k); k += p.length; }
+    return out;
+  }
+  const str = (b, o, n) => lat.decode(b.subarray(o, Math.min(b.length, o + n)));
+  const be16 = (b, o) => (b[o] << 8) | b[o + 1];
+  const be32 = (b, o) => ((b[o] << 24) | (b[o + 1] << 16) | (b[o + 2] << 8) | b[o + 3]) >>> 0;
+  const put16 = (n) => new Uint8Array([(n >>> 8) & 255, n & 255]);
+  const put32 = (n) => new Uint8Array([n >>> 24, (n >>> 16) & 255, (n >>> 8) & 255, n & 255]);
+  const hex = (b) => Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('');
+  async function sha256(b) { return new Uint8Array(await crypto.subtle.digest('SHA-256', b)); }
+  function eq(a, b) { if (a.length !== b.length) return false; let d = 0; for (let i = 0; i < a.length; i++) d |= a[i] ^ b[i]; return d === 0; }
+
+  let crcTable = null;
+  function crc32(parts) {
+    if (!crcTable) {
+      crcTable = new Uint32Array(256);
+      for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; crcTable[n] = c >>> 0; }
+    }
+    let c = 0xFFFFFFFF;
+    for (const p of parts) for (let i = 0; i < p.length; i++) c = crcTable[(c ^ p[i]) & 255] ^ (c >>> 8);
+    return (c ^ 0xFFFFFFFF) >>> 0;
+  }
+
+  function formatOf(b) {
+    if (b.length > 3 && b[0] === 0xFF && b[1] === 0xD8 && b[2] === 0xFF) return 'jpeg';
+    if (b.length > 8 && PNG_SIG.every((v, i) => b[i] === v)) return 'png';
+    return null;
+  }
+
+  /* ---------- JPEG ---------- */
+  function parseJpeg(b) {
+    const n = b.length;
+    const parts = [{ start: 0, end: 2, role: 'keep', tag: 'SOI' }];
+    let dims = null, p = 2, imageStart = -1;
+    while (p < n) {
+      if (b[p] !== 0xFF) throw fail('malformed', 'This JPEG has an unusual structure and cannot be sealed safely.');
+      const segStart = p;
+      while (p + 1 < n && b[p + 1] === 0xFF) p++;
+      if (p + 1 >= n) throw fail('malformed', 'This JPEG ends before the picture data starts.');
+      const m = b[p + 1];
+      if (m === 0xDA || m === 0xD9) { imageStart = segStart; p = segStart; break; }
+      if ((m >= 0xD0 && m <= 0xD7) || m === 0x01) { parts.push({ start: segStart, end: p + 2, role: 'keep', tag: 'MARK' }); p += 2; continue; }
+      if (p + 4 > n) throw fail('malformed', 'This JPEG ends before the picture data starts.');
+      const len = be16(b, p + 2), end = p + 2 + len;
+      if (len < 2 || end > n) throw fail('malformed', 'This JPEG has a damaged header.');
+      const part = { start: segStart, end, marker: m, dataStart: p + 4, role: 'keep', tag: JNAME[m] || 'SEG' };
+      classifyJpeg(b, part);
+      if (!dims && m >= 0xC0 && m <= 0xCF && m !== 0xC4 && m !== 0xC8 && m !== 0xCC && len >= 7) dims = { height: be16(b, p + 5), width: be16(b, p + 7) };
+      parts.push(part);
+      p = end;
+    }
+    if (imageStart < 0) throw fail('malformed', 'This JPEG has no picture data.');
+    // Walk the scans to the end-of-image marker, so anything stored after it can be told apart.
+    let q = imageStart, imageEnd = n;
+    while (q + 1 < n) {
+      while (q + 1 < n && b[q + 1] === 0xFF) q++;
+      const m = b[q + 1];
+      if (m === 0xD9) { imageEnd = q + 2; break; }
+      if ((m >= 0xD0 && m <= 0xD7) || m === 0x01) { q += 2; continue; }
+      if (q + 4 > n) break;
+      q += 2 + be16(b, q + 2);
+      if (m === 0xDA) {
+        for (;;) {
+          q = b.indexOf(0xFF, q);
+          if (q < 0 || q + 1 >= n) { q = n; break; }
+          const x = b[q + 1];
+          if (x === 0x00 || (x >= 0xD0 && x <= 0xD7)) { q += 2; continue; }
+          if (x === 0xFF) { q++; continue; }
+          break;
+        }
+      } else if (b[q] !== 0xFF) { q = n; }
+    }
+    parts.push({ start: imageStart, end: imageEnd, role: 'keep', tag: 'Image data' });
+    if (imageEnd < n) parts.push({ start: imageEnd, end: n, role: 'seal', tag: 'After image', kind: 'trailer' });
+    return { parts, dims };
+  }
+
+  function classifyJpeg(b, part) {
+    const m = part.marker, d = part.dataStart;
+    const is = (s) => str(b, d, s.length) === s;
+    if (m === 0xE0) {
+      if (is('JFIF\0')) part.tag = 'APP0 JFIF';
+      else { part.role = 'seal'; part.tag = 'APP0'; part.kind = 'other'; }
+    } else if (m === 0xE1) {
+      part.role = 'seal';
+      if (is('Exif\0\0')) { part.tag = 'APP1 Exif'; part.kind = 'exif'; part.tiffStart = d + 6; }
+      else if (is('http://ns.adobe.com/xap/1.0/\0')) { part.tag = 'APP1 XMP'; part.kind = 'xmp'; part.textStart = d + 29; }
+      else if (is('http://ns.adobe.com/xmp/extension/\0')) { part.tag = 'APP1 XMP+'; part.kind = 'xmpext'; }
+      else { part.tag = 'APP1'; part.kind = 'other'; }
+    } else if (m === 0xE2) {
+      if (is('ICC_PROFILE\0')) part.tag = 'APP2 ICC';
+      else if (is('MPF\0')) { part.role = 'seal'; part.tag = 'APP2 MPF'; part.kind = 'mpf'; }
+      else { part.role = 'seal'; part.tag = 'APP2'; part.kind = 'other'; }
+    } else if (m === 0xEE && is('Adobe')) {
+      part.tag = 'APP14 Adobe';
+    } else if (m === 0xEF && part.end - d >= 12 && JID.every((v, i) => b[d + i] === v)) {
+      part.role = 'capsule'; part.tag = 'Sealed capsule';
+      part.seq = be16(b, d + 8); part.total = be16(b, d + 10); part.payloadStart = d + 12;
+    } else if (m >= 0xE3 && m <= 0xEF) {
+      part.role = 'seal'; part.tag = 'APP' + (m - 0xE0);
+      if (m === 0xED && is('Photoshop 3.0\0')) { part.tag = 'APP13 IPTC'; part.kind = 'iptc'; }
+      else part.kind = 'other';
+    } else if (m === 0xFE) {
+      part.role = 'seal'; part.tag = 'COM'; part.kind = 'comment';
+    }
+  }
+
+  function jpegCapsule(blob) {
+    const total = Math.ceil(blob.length / CHUNK);
+    if (total > 65535) throw fail('toolarge', 'There is too much extra data in this file to seal.');
+    const out = [];
+    for (let i = 0; i < total; i++) {
+      const chunk = blob.subarray(i * CHUNK, (i + 1) * CHUNK);
+      out.push(cat([[0xFF, 0xEF], put16(chunk.length + 14), JID, [VERSION], put16(i), put16(total), chunk]));
+    }
+    return out;
+  }
+
+  /* ---------- PNG ---------- */
+  function parsePng(b) {
+    const n = b.length;
+    const parts = [{ start: 0, end: 8, role: 'keep', tag: 'Signature' }];
+    let dims = null, p = 8, ended = false;
+    while (p + 12 <= n) {
+      const len = be32(b, p), type = str(b, p + 4, 4), end = p + 12 + len;
+      if (end > n) throw fail('malformed', 'This PNG has a damaged chunk.');
+      const part = { start: p, end, type, dataStart: p + 8, dataEnd: p + 8 + len, role: 'keep', tag: type };
+      if (type === 'IHDR' && len >= 8) dims = { width: be32(b, p + 8), height: be32(b, p + 12) };
+      if (type === PNG_CAP) { part.role = 'capsule'; part.tag = 'Sealed capsule'; }
+      else if (!PNG_KEEP.has(type) && type.charCodeAt(0) >= 97) {
+        part.role = 'seal';
+        part.kind = type === 'eXIf' ? 'exif' : type === 'tEXt' || type === 'zTXt' || type === 'iTXt' ? 'text' : type === 'tIME' ? 'time' : 'other';
+        if (part.kind === 'exif') part.tiffStart = part.dataStart;
+      }
+      parts.push(part);
+      p = end;
+      if (type === 'IEND') { ended = true; break; }
+    }
+    if (!dims) throw fail('malformed', 'This PNG has no header.');
+    if (p < n) parts.push(ended ? { start: p, end: n, role: 'seal', tag: 'After image', kind: 'trailer' } : { start: p, end: n, role: 'keep', tag: 'Tail' });
+    return { parts, dims };
+  }
+
+  /* ---------- TIFF / Exif ---------- */
+  function readTiff(t) {
+    try {
+      if (t.length < 8) return null;
+      const le = t[0] === 0x49 && t[1] === 0x49;
+      if (!le && !(t[0] === 0x4D && t[1] === 0x4D)) return null;
+      const dv = new DataView(t.buffer, t.byteOffset, t.byteLength);
+      const r16 = (o) => dv.getUint16(o, le), r32 = (o) => dv.getUint32(o, le);
+      if (r16(2) !== 42) return null;
+      const SIZE = [0, 1, 1, 2, 4, 8, 1, 1, 2, 4, 8, 4, 8];
+      let count = 0;
+      const ifd = (off) => {
+        const tags = new Map();
+        if (!off || off + 2 > t.length) return { tags, next: 0 };
+        const n = r16(off);
+        for (let i = 0; i < n; i++) {
+          const e = off + 2 + i * 12;
+          if (e + 12 > t.length) break;
+          const type = r16(e + 2), cnt = r32(e + 4), size = (SIZE[type] || 1) * cnt;
+          const vo = size <= 4 ? e + 8 : r32(e + 8);
+          if (vo + size > t.length) continue;
+          tags.set(r16(e), { type, cnt, off: vo });
+          count++;
+        }
+        const nx = off + 2 + n * 12;
+        return { tags, next: nx + 4 <= t.length ? r32(nx) : 0 };
+      };
+      const text = (e) => {
+        if (!e || e.type !== 2) return '';
+        const raw = t.subarray(e.off, e.off + e.cnt);
+        const z = raw.indexOf(0);
+        return utf.decode(z < 0 ? raw : raw.subarray(0, z)).trim();
+      };
+      const num = (e) => !e ? undefined : e.type === 3 ? r16(e.off) : e.type === 4 ? r32(e.off) : e.type === 1 ? t[e.off] : undefined;
+      const rats = (e) => {
+        if (!e || e.type !== 5) return null;
+        const out = [];
+        for (let i = 0; i < e.cnt; i++) { const d = r32(e.off + i * 8 + 4); out.push(d ? r32(e.off + i * 8) / d : 0); }
+        return out;
+      };
+      const i0 = ifd(r32(4)), g0 = i0.tags;
+      const ex = ifd(num(g0.get(0x8769))).tags;
+      const gp = ifd(num(g0.get(0x8825))).tags;
+      const i1 = i0.next ? ifd(i0.next).tags : new Map();
+      const out = {
+        tags: count,
+        make: text(g0.get(0x010F)), model: text(g0.get(0x0110)), software: text(g0.get(0x0131)),
+        dateTime: text(g0.get(0x0132)), artist: text(g0.get(0x013B)), copyright: text(g0.get(0x8298)),
+        orientation: num(g0.get(0x0112)) || 0,
+        taken: text(ex.get(0x9003)), offset: text(ex.get(0x9011)), lens: text(ex.get(0xA434)),
+        serial: text(ex.get(0xA431)), owner: text(ex.get(0xA430)),
+        thumb: num(i1.get(0x0202)) || 0, gps: null,
+      };
+      const la = rats(gp.get(2)), lo = rats(gp.get(4));
+      if (la && lo && la.length === 3 && lo.length === 3) {
+        const dec = (v) => v[0] + v[1] / 60 + v[2] / 3600;
+        const lat0 = dec(la) * (text(gp.get(1)).toUpperCase() === 'S' ? -1 : 1);
+        const lon0 = dec(lo) * (text(gp.get(3)).toUpperCase() === 'W' ? -1 : 1);
+        if (Math.abs(lat0) <= 90 && Math.abs(lon0) <= 180) {
+          const al = rats(gp.get(6));
+          out.gps = { lat: lat0, lon: lon0, alt: al ? al[0] * (num(gp.get(5)) === 1 ? -1 : 1) : null };
+        }
+      }
+      return out;
+    } catch (e) { return null; }
+  }
+
+  /* Minimal big-endian TIFF writer: entries are [tag, type, value]. Types: 2 text, 3 short, 4 long, 5 rationals [[n,d],...]. */
+  function encIfd(entries, base) {
+    const list = entries.slice().sort((a, b) => a[0] - b[0]);
+    const head = new Uint8Array(2 + list.length * 12 + 4);
+    head.set(put16(list.length), 0);
+    const extra = []; let off = base + head.length;
+    list.forEach(([tag, type, v], i) => {
+      let raw, cnt = 1;
+      if (type === 2) { raw = enc.encode(v + '\0'); cnt = raw.length; }
+      else if (type === 3) raw = put16(v);
+      else if (type === 4) raw = put32(v);
+      else { raw = cat(v.map(([a, c]) => cat([put32(a), put32(c)]))); cnt = v.length; }
+      const e = 2 + i * 12;
+      head.set(put16(tag), e); head.set(put16(type), e + 2); head.set(put32(cnt), e + 4);
+      if (raw.length <= 4) head.set(raw, e + 8);
+      else {
+        head.set(put32(off), e + 8); extra.push(raw); off += raw.length;
+        if (raw.length & 1) { extra.push(new Uint8Array(1)); off++; }
+      }
+    });
+    return cat([head, ...extra]);
+  }
+  function buildTiff({ ifd0 = [], exif = null, gps = null }) {
+    const withPtrs = (eo, go) => ifd0.concat(exif ? [[0x8769, 4, eo]] : [], gps ? [[0x8825, 4, go]] : []);
+    const exifOff = 8 + encIfd(withPtrs(0, 0), 8).length;
+    const exifBytes = exif ? encIfd(exif, exifOff) : new Uint8Array(0);
+    const gpsOff = exifOff + exifBytes.length;
+    const gpsBytes = gps ? encIfd(gps, gpsOff) : new Uint8Array(0);
+    return cat([[0x4D, 0x4D, 0, 42, 0, 0, 0, 8], encIfd(withPtrs(exifOff, gpsOff), 8), exifBytes, gpsBytes]);
+  }
+  function exifSegment(tiff) {
+    return cat([[0xFF, 0xE1], put16(tiff.length + 8), enc.encode('Exif\0\0'), tiff]);
+  }
+  /* Insert ready-made segments after SOI and any JFIF header. Used to build the sample photo. */
+  function addJpegSegments(input, segments) {
+    const b = u8(input), { parts } = parseJpeg(b);
+    let at = 2;
+    for (let i = 1; i < parts.length && parts[i].marker === 0xE0; i++) at = parts[i].end;
+    return cat([b.subarray(0, at), ...segments, b.subarray(at)]);
+  }
+
+  /* ---------- inspection ---------- */
+  function size(n) {
+    if (n < 1024) return n + ' B';
+    if (n < 1048576) return (n / 1024).toFixed(n < 10240 ? 1 : 0) + ' KB';
+    return (n / 1048576).toFixed(1) + ' MB';
+  }
+  const clip = (s, n = 140) => (s.length > n ? s.slice(0, n) + '...' : s).replace(/\s+/g, ' ').trim();
+  const stamp = (s, off) => s ? s.replace(/^(\d{4}):(\d\d):(\d\d)/, '$1-$2-$3') + (off ? ' ' + off : '') : '';
+  const ROT = { 2: 'mirrored', 3: 'rotated 180°', 4: 'flipped', 5: 'mirrored, rotated 270°', 6: 'rotated 90°', 7: 'mirrored, rotated 90°', 8: 'rotated 270°' };
+
+  function inspect(input) {
+    const b = u8(input);
+    const format = formatOf(b);
+    if (!format) throw fail('unsupported', 'That file is not a JPEG or PNG. HEIC, WebP, RAW and video are not handled.');
+    const { parts, dims } = format === 'jpeg' ? parseJpeg(b) : parsePng(b);
+    const fields = [];
+    let exif = null, sealBytes = 0, otherBytes = 0, otherCount = 0;
+    for (const p of parts) {
+      p.size = p.end - p.start;
+      if (p.role !== 'seal') continue;
+      sealBytes += p.size;
+      if (p.kind === 'exif') {
+        const x = readTiff(b.subarray(p.tiffStart, format === 'jpeg' ? p.end : p.dataEnd));
+        if (!x) { fields.push({ k: 'Exif block', v: size(p.size) + ', unreadable layout' }); continue; }
+        if (!exif) exif = x;
+        if (x.gps) {
+          const g = x.gps;
+          fields.push({ k: 'Location', v: Math.abs(g.lat).toFixed(5) + '° ' + (g.lat < 0 ? 'S' : 'N') + ', ' + Math.abs(g.lon).toFixed(5) + '° ' + (g.lon < 0 ? 'W' : 'E'), geo: [g.lat, g.lon] });
+          if (g.alt !== null) fields.push({ k: 'Altitude', v: Math.round(g.alt) + ' m' });
+        }
+        const taken = stamp(x.taken || x.dateTime, x.offset);
+        if (taken) fields.push({ k: 'Taken', v: taken });
+        const dev = [x.make, x.model.startsWith(x.make) ? x.model.slice(x.make.length).trim() : x.model].filter(Boolean).join(' ');
+        if (dev) fields.push({ k: 'Device', v: dev });
+        if (x.lens) fields.push({ k: 'Lens', v: x.lens });
+        if (x.serial) fields.push({ k: 'Serial number', v: x.serial });
+        if (x.owner) fields.push({ k: 'Owner', v: x.owner });
+        if (x.artist) fields.push({ k: 'Artist', v: x.artist });
+        if (x.copyright) fields.push({ k: 'Copyright', v: x.copyright });
+        if (x.software) fields.push({ k: 'Software', v: x.software });
+        if (x.thumb) fields.push({ k: 'Thumbnail', v: size(x.thumb) + ' copy of the frame, often uncropped' });
+        if (x.orientation > 1 && ROT[x.orientation]) fields.push({ k: 'Rotation flag', v: ROT[x.orientation] });
+        fields.push({ k: 'Exif block', v: x.tags + (x.tags === 1 ? ' tag, ' : ' tags, ') + size(p.size) });
+      } else if (p.kind === 'xmp') {
+        const body = utf.decode(b.subarray(p.textStart, p.end));
+        const tool = /CreatorTool(?:="|>)([^"<]+)/.exec(body);
+        fields.push({ k: 'XMP packet', v: size(p.size) + (tool ? ', made with ' + clip(tool[1], 60) : '') });
+      } else if (p.kind === 'iptc') {
+        fields.push({ k: 'IPTC record', v: size(p.size) + ' of captions, credits or keywords' });
+      } else if (p.kind === 'comment') {
+        fields.push({ k: 'Comment', v: clip(utf.decode(b.subarray(p.dataStart, p.end))) || size(p.size) });
+      } else if (p.kind === 'text') {
+        const data = b.subarray(p.dataStart, p.dataEnd), z = data.indexOf(0);
+        const key = z < 0 ? p.type : lat.decode(data.subarray(0, z));
+        let val = size(p.size);
+        if (z >= 0 && p.type === 'tEXt') val = clip(lat.decode(data.subarray(z + 1)));
+        else if (z >= 0 && p.type === 'iTXt' && data[z + 1] === 0) {
+          const a = data.indexOf(0, z + 3), c = a < 0 ? -1 : data.indexOf(0, a + 1);
+          if (c >= 0) val = clip(utf.decode(data.subarray(c + 1)));
+        }
+        if (key === 'XML:com.adobe.xmp') fields.push({ k: 'XMP packet', v: size(p.size) });
+        else fields.push({ k: clip(key, 40), v: val || size(p.size) });
+      } else if (p.kind === 'time') {
+        const d = p.dataStart, two = (v) => String(v).padStart(2, '0');
+        if (p.dataEnd - d >= 7) fields.push({ k: 'Last modified', v: be16(b, d) + '-' + two(b[d + 2]) + '-' + two(b[d + 3]) + ' ' + two(b[d + 4]) + ':' + two(b[d + 5]) + ':' + two(b[d + 6]) + ' UTC' });
+      } else if (p.kind === 'trailer') {
+        fields.push({ k: 'After the image', v: size(p.size) + ' of extra data, such as a motion clip, depth map or HDR layer' });
+      } else if (p.kind === 'mpf') {
+        fields.push({ k: 'Picture index', v: 'points to extra images stored in this file' });
+      } else { otherBytes += p.size; otherCount++; }
+    }
+    if (otherCount) fields.push({ k: 'Other blocks', v: otherCount + (otherCount === 1 ? ' block, ' : ' blocks, ') + size(otherBytes) + ' of app or maker data' });
+
+    let capsule = null;
+    const caps = parts.filter((p) => p.role === 'capsule');
+    if (caps.length) {
+      const blob = capsuleBlob(b, format, caps);
+      capsule = {
+        bytes: caps.reduce((s, p) => s + p.size, 0), blocks: caps.length,
+        valid: blob.length >= 53 && str(blob, 0, 4) === 'DFS1',
+        iterations: blob.length >= 9 ? be32(blob, 5) : 0,
+        preview: hex(blob.subarray(37, 37 + 40)).replace(/(.{4})/g, '$1 ').trim(),
+      };
+    }
+    return { format, size: b.length, dims, parts, fields, exif, sealBytes, capsule };
+  }
+
+  function capsuleBlob(b, format, caps) {
+    if (format === 'png') return b.subarray(caps[0].dataStart, caps[0].dataEnd);
+    const sorted = caps.slice().sort((x, y) => x.seq - y.seq);
+    return cat(sorted.map((p) => b.subarray(p.payloadStart, p.end)));
+  }
+
+  /* ---------- crypto ---------- */
+  async function deriveKey(pass, salt, iterations) {
+    const material = await crypto.subtle.importKey('raw', enc.encode(String(pass).normalize('NFKC')), 'PBKDF2', false, ['deriveKey']);
+    return crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations, hash: 'SHA-256' }, material, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+  }
+  async function lock(plain, pass) {
+    const salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
+    const head = cat([enc.encode('DFS1'), [1], put32(ITER), salt]);
+    const key = await deriveKey(pass, salt, ITER);
+    const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv, additionalData: head }, key, plain);
+    return cat([head, iv, new Uint8Array(ct)]);
+  }
+  async function unlock(blob, pass) {
+    if (blob.length < 53 || str(blob, 0, 4) !== 'DFS1' || blob[4] !== 1) throw fail('corrupt', 'The sealed block in this file is damaged or was made by a newer version.');
+    const iterations = be32(blob, 5);
+    if (iterations < 1000 || iterations > 20000000) throw fail('corrupt', 'The sealed block in this file is damaged.');
+    const head = blob.slice(0, 25), salt = blob.slice(9, 25), iv = blob.slice(25, 37);
+    const key = await deriveKey(pass, salt, iterations);
+    try {
+      return new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv, additionalData: head }, key, blob.subarray(37)));
+    } catch (e) {
+      throw fail('badpass', 'That passphrase does not open this seal. If you are sure it is right, the sealed block was damaged.');
+    }
+  }
+
+  /* ---------- seal / unseal ---------- */
+  async function seal(input, pass, opts = {}) {
+    const b = u8(input), info = inspect(b);
+    if (info.capsule) throw fail('already', 'This file is already sealed. Unseal it first.');
+    const sealed = [];
+    info.parts.forEach((p, i) => { if (p.role === 'seal') sealed.push([i, p]); });
+    if (!sealed.length) throw fail('nothing', 'This file carries no metadata, so there is nothing to seal.');
+
+    let stub = null;
+    const o = info.exif ? info.exif.orientation : 0;
+    if (info.format === 'jpeg' && opts.keepOrientation !== false && o >= 2 && o <= 8) stub = exifSegment(buildTiff({ ifd0: [[0x0112, 3, o]] }));
+
+    const body = [enc.encode('DFP1'), [stub ? 1 : 0, info.format === 'jpeg' ? 1 : 2], await sha256(b), put32(info.parts.length), put32(sealed.length)];
+    let len = 46;
+    for (const [i, p] of sealed) { body.push(put32(i), put32(p.size), b.subarray(p.start, p.end)); len += 8 + p.size; }
+    body.push(new Uint8Array((PAD - (len % PAD)) % PAD));
+    const blob = await lock(cat(body), pass);
+
+    let capsule;
+    if (info.format === 'jpeg') capsule = jpegCapsule(blob);
+    else { const type = enc.encode(PNG_CAP); capsule = [cat([put32(blob.length), type, blob, put32(crc32([type, blob]))])]; }
+
+    const kept = info.parts.filter((p) => p.role === 'keep');
+    let at = 0;
+    if (info.format === 'jpeg') { while (kept[at + 1] && kept[at + 1].marker === 0xE0) at++; }
+    else if (kept[1] && kept[1].type === 'IHDR') at = 1;
+    const out = [];
+    kept.forEach((p, i) => {
+      out.push(b.subarray(p.start, p.end));
+      if (i === at) { out.push(...capsule); if (stub) out.push(stub); }
+    });
+    const bytes = cat(out);
+    return { bytes, sealedBytes: info.sealBytes, capsuleBytes: capsule.reduce((s, c) => s + c.length, 0), parts: sealed.length, keptOrientation: !!stub };
+  }
+
+  async function unseal(input, pass) {
+    const b = u8(input), format = formatOf(b);
+    if (!format) throw fail('unsupported', 'That file is not a JPEG or PNG.');
+    const { parts } = format === 'jpeg' ? parseJpeg(b) : parsePng(b);
+    const caps = parts.filter((p) => p.role === 'capsule');
+    if (!caps.length) throw fail('nocapsule', 'This file has no sealed block. It may have been re-encoded after it was sealed.');
+    if (format === 'jpeg' && caps.length !== caps[0].total) throw fail('corrupt', 'Part of the sealed block is missing from this file.');
+    const plain = await unlock(capsuleBlob(b, format, caps), pass);
+    if (plain.length < 46 || str(plain, 0, 4) !== 'DFP1') throw fail('corrupt', 'The sealed block opened but its contents are not readable.');
+    const hasStub = (plain[4] & 1) === 1, hash = plain.subarray(6, 38), total = be32(plain, 38), count = be32(plain, 42);
+    const back = new Map();
+    let p = 46;
+    for (let i = 0; i < count; i++) {
+      if (p + 8 > plain.length) throw fail('corrupt', 'The sealed block opened but its contents are cut short.');
+      const idx = be32(plain, p), len = be32(plain, p + 4);
+      if (p + 8 + len > plain.length) throw fail('corrupt', 'The sealed block opened but its contents are cut short.');
+      back.set(idx, plain.subarray(p + 8, p + 8 + len));
+      p += 8 + len;
+    }
+    const lastCap = parts.lastIndexOf(caps.reduce((a, c) => (c.start > a.start ? c : a)));
+    const kept = parts.filter((part, i) => part.role !== 'capsule' && !(hasStub && i === lastCap + 1));
+    const out = [];
+    let k = 0;
+    for (let i = 0; i < total; i++) {
+      if (back.has(i)) out.push(back.get(i));
+      else if (k < kept.length) { out.push(b.subarray(kept[k].start, kept[k].end)); k++; }
+    }
+    for (; k < kept.length; k++) out.push(b.subarray(kept[k].start, kept[k].end));
+    const bytes = cat(out);
+    const got = await sha256(bytes);
+    return { bytes, verified: eq(got, hash), sha256: hex(got), parts: count };
+  }
+
+  return { inspect, seal, unseal, size, buildTiff, exifSegment, addJpegSegments, ITER };
+})();
+</script>
+
+<script>
+(() => {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const el = { bench: $('bench'), preview: $('preview'), fname: $('fname'), fmeta: $('fmeta'), pills: $('pills'), pickBtn: $('pickBtn'), pickNote: $('pickNote'), fileInput: $('fileInput'), fileErr: $('fileErr'), banner: $('banner'), bannerTitle: $('bannerTitle'), bannerBody: $('bannerBody'), bannerCode: $('bannerCode'), saveBtn: $('saveBtn'), saveNote: $('saveNote'), map: $('map'), mapHint: $('mapHint'), readTitle: $('readTitle'), readout: $('readout'), form: $('form'), formTitle: $('formTitle'), fields: $('fields'), pass: $('pass'), pass2: $('pass2'), confirmField: $('confirmField'), passHelp: $('passHelp'), formErr: $('formErr'), showPass: $('showPass'), genBtn: $('genBtn'), copyBtn: $('copyBtn'), orientRow: $('orientRow'), keepOrient: $('keepOrient'), goBtn: $('goBtn'), empty: $('empty') };
+  const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const state = { cur: null, banner: null, busy: false, url: null };
+
+  /* Saving: the Claude viewer hands files over through its own prompt; anywhere else a normal download works. */
+  let saver = window.claude && window.claude.use ? 'pending' : 'anchor', downloads = null;
+  if (saver === 'pending') {
+    window.claude.use('downloads').then((ns) => { downloads = ns; saver = ns ? 'host' : 'none'; renderBanner(); }, () => { saver = 'none'; renderBanner(); });
+  }
+
+  function node(tag, cls, text) { const n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; }
+  function show(n, on) { n.hidden = !on; }
+  function setErr(n, msg) { n.textContent = msg || ''; show(n, !!msg); }
+  const mime = (f) => (f === 'png' ? 'image/png' : 'image/jpeg');
+
+  function load(bytes, name, origin) {
+    const info = DFSeal.inspect(bytes);
+    state.cur = { bytes, name, origin, info };
+    if (state.url) URL.revokeObjectURL(state.url);
+    state.url = URL.createObjectURL(new Blob([bytes], { type: mime(info.format) }));
+    el.preview.src = state.url;
+    setErr(el.fileErr, '');
+    setErr(el.formErr, '');
+    render();
+  }
+
+  function render() {
+    const { name, origin, info } = state.cur;
+    const sealedMode = !!info.capsule;
+    el.fname.textContent = name;
+    el.pickNote.textContent = origin === 'sample' ? 'This is a made-up sample. Choose, drop or paste a JPEG or PNG of your own.' : 'JPEG or PNG. Drop or paste one here too.';
+    el.fmeta.textContent = info.format.toUpperCase() + ' · ' + DFSeal.size(info.size) + ' · ' + info.dims.width + ' × ' + info.dims.height;
+    el.pills.replaceChildren();
+    if (origin === 'sample' || state.sampleChain) el.pills.append(node('span', 'pill', 'Sample'));
+    el.pills.append(sealedMode ? node('span', 'pill sealed', 'Sealed') : info.sealBytes ? node('span', 'pill exposed', 'Exposed') : node('span', 'pill clean', 'Clean'));
+
+    // structure map: consecutive identical kept parts collapse into one chip
+    const chips = [];
+    for (const p of info.parts) {
+      const last = chips[chips.length - 1];
+      if (last && last.tag === p.tag && last.role === p.role && p.role !== 'seal') { last.size += p.size; last.n++; }
+      else chips.push({ tag: p.tag, role: p.role, size: p.size, n: 1 });
+    }
+    el.map.replaceChildren(...chips.map((c, i) => {
+      const li = node('li', c.role === 'seal' ? 'meta' : c.role === 'capsule' ? 'cap' : '', c.tag + (c.n > 1 ? ' ×' + c.n : ''));
+      li.style.setProperty('--i', i);
+      li.append(node('i', '', DFSeal.size(c.size)));
+      return li;
+    }));
+    el.mapHint.textContent = sealedMode
+      ? 'The filled block holds the encrypted metadata. Photo viewers skip it and draw the picture from the rest.'
+      : info.sealBytes
+        ? 'Outlined parts are metadata. Sealing replaces them with one encrypted block and copies everything else bit for bit.'
+        : 'Every part of this file is needed to draw the picture.';
+
+    // readout
+    const rows = [];
+    if (sealedMode) {
+      el.readTitle.textContent = 'What a stranger sees now';
+      const c = info.capsule;
+      rows.push(['Sealed block', DFSeal.size(c.bytes) + (c.blocks > 1 ? ' in ' + c.blocks + ' pieces' : '')]);
+      rows.push(['Cipher', 'AES-256-GCM']);
+      rows.push(['Key', 'PBKDF2-SHA256, ' + c.iterations.toLocaleString('en-US') + ' rounds']);
+      rows.push(['Contents', c.preview + ' ...', 'cipher']);
+      const left = info.fields.filter((f) => f.k !== 'Exif block');
+      if (left.length) for (const f of left) rows.push(['Still readable', f.k + ', ' + f.v]);
+      else rows.push(['Still readable', 'nothing but the picture']);
+    } else {
+      el.readTitle.textContent = 'What this file gives away';
+      for (const f of info.fields) rows.push([f.k, f.v, '', f.geo]);
+      if (!rows.length) rows.push(['Metadata', 'none found']);
+    }
+    el.readout.replaceChildren(...rows.map(([k, v, cls, geo]) => {
+      const div = node('div');
+      const dd = node('dd', cls || '', v);
+      if (geo) { const a = node('a', '', 'Map'); a.href = 'https://www.openstreetmap.org/?mlat=' + geo[0].toFixed(5) + '&mlon=' + geo[1].toFixed(5) + '#map=16/' + geo[0].toFixed(5) + '/' + geo[1].toFixed(5); a.target = '_blank'; a.rel = 'noopener'; dd.append(a); }
+      div.append(node('dt', '', k), dd);
+      return div;
+    }));
+
+    // form
+    const canAct = sealedMode || info.sealBytes > 0;
+    show(el.form, canAct); show(el.empty, !canAct);
+    el.formTitle.textContent = sealedMode ? 'Unseal it' : 'Seal it';
+    el.goBtn.textContent = sealedMode ? 'Unseal metadata' : 'Seal metadata';
+    show(el.confirmField, !sealedMode);
+    el.fields.classList.toggle('two', !sealedMode);
+    show(el.genBtn, !sealedMode);
+    show(el.passHelp, !sealedMode);
+    const o = info.exif ? info.exif.orientation : 0;
+    show(el.orientRow, !sealedMode && info.format === 'jpeg' && o >= 2 && o <= 8);
+    renderBanner();
+  }
+
+  function renderBanner() {
+    const bn = state.banner;
+    show(el.banner, !!bn);
+    if (!bn) return;
+    el.banner.classList.toggle('warn', !!bn.warn);
+    el.bannerTitle.textContent = bn.title;
+    el.bannerBody.textContent = bn.body;
+    el.bannerCode.textContent = bn.code || '';
+    show(el.bannerCode, !!bn.code);
+    el.saveBtn.textContent = bn.save;
+    show(el.saveBtn, saver !== 'none');
+    el.saveBtn.disabled = saver === 'pending';
+    if (saver === 'none') el.saveNote.textContent = 'This view cannot save files. Open the page in the Claude app, or host the page yourself.';
+    else if (bn.note !== undefined) el.saveNote.textContent = bn.note;
+  }
+
+  async function save() {
+    const { bytes, name, info } = state.cur, bn = state.banner;
+    const note = (t) => { bn.note = t; el.saveNote.textContent = t; };
+    if (saver === 'anchor') {
+      const a = document.createElement('a');
+      a.href = state.url; a.download = name; document.body.append(a); a.click(); a.remove();
+      return note('Saved as ' + name + '.');
+    }
+    if (saver !== 'host') return;
+    el.saveBtn.disabled = true;
+    try {
+      await downloads.save({ filename: name, data: new Blob([bytes], { type: mime(info.format) }) });
+      note('Saved as ' + name + '.');
+    } catch (e) {
+      const code = e && e.code;
+      if (code === 'declined') note('Save cancelled. The file is still here.');
+      else if (code === 'rate_limited') note('A save prompt is already open. Answer it, then try again.');
+      else if (code === 'too_large') note('This file is too large to save from this view.');
+      else { saver = 'none'; renderBanner(); }
+    } finally { el.saveBtn.disabled = false; }
+  }
+
+  function sealedName(name, fmt) {
+    const m = /^(.*)\.(jpe?g|png)$/i.exec(name);
+    return (m ? m[1] : name) + '.sealed.' + (m ? m[2].toLowerCase() : fmt === 'png' ? 'png' : 'jpg');
+  }
+  function restoredName(name, fmt) {
+    const s = /^(.*)\.sealed\.(jpe?g|png)$/i.exec(name);
+    if (s) return s[1] + '.' + s[2].toLowerCase();
+    const m = /^(.*)\.(jpe?g|png)$/i.exec(name);
+    return (m ? m[1] : name) + '.restored.' + (m ? m[2].toLowerCase() : fmt === 'png' ? 'png' : 'jpg');
+  }
+
+  /* The one piece of theatre: plain values turn to ciphertext before the view switches. */
+  function scramble() {
+    if (calm) return Promise.resolve();
+    const cells = Array.from(el.readout.querySelectorAll('dd'));
+    const targets = cells.map((c) => c.textContent.length);
+    const H = '0123456789abcdef';
+    return new Promise((done) => {
+      const t0 = performance.now();
+      (function tick(now) {
+        const f = Math.min(1, (now - t0) / 620);
+        cells.forEach((c, i) => {
+          const n = Math.min(targets[i], 44), cut = Math.floor(n * f);
+          let s = '';
+          for (let j = 0; j < cut; j++) s += H[(Math.random() * 16) | 0];
+          c.textContent = s + c.textContent.slice(cut, n);
+          if (f > 0.2) c.classList.add('cipher');
+        });
+        if (f < 1) requestAnimationFrame(tick); else setTimeout(done, 160);
+      })(t0);
+    });
+  }
+
+  async function pictureIntact(before, after, fmt) {
+    if (!window.createImageBitmap) return true;
+    try {
+      const a = await createImageBitmap(new Blob([before], { type: mime(fmt) }));
+      let b;
+      try { b = await createImageBitmap(new Blob([after], { type: mime(fmt) })); } catch (e) { a.close(); return false; }
+      const same = a.width === b.width && a.height === b.height;
+      a.close(); b.close();
+      return same;
+    } catch (e) { return true; }
+  }
+
+  async function submit(ev) {
+    ev.preventDefault();
+    if (state.busy || !state.cur) return;
+    const { bytes, name, info } = state.cur, sealing = !info.capsule;
+    const pass = el.pass.value;
+    setErr(el.formErr, '');
+    if (!pass) return setErr(el.formErr, 'Enter a passphrase.');
+    if (sealing) {
+      if (pass.length < 8) return setErr(el.formErr, 'Use at least 8 characters.');
+      if (pass !== el.pass2.value) return setErr(el.formErr, 'The two passphrases do not match.');
+    }
+    state.busy = true;
+    el.goBtn.disabled = true; el.goBtn.classList.add('busy');
+    el.goBtn.textContent = sealing ? 'Sealing' : 'Unsealing';
+    try {
+      if (sealing) {
+        const r = await DFSeal.seal(bytes, pass, { keepOrientation: el.keepOrient.checked });
+        if (!(await pictureIntact(bytes, r.bytes, info.format))) throw Object.assign(new Error('The sealed copy did not open as a picture, so nothing was changed. This file has a structure the tool does not handle.'), { code: 'check' });
+        await scramble();
+        state.banner = {
+          title: 'Sealed.',
+          body: DFSeal.size(r.sealedBytes) + ' of metadata is now a ' + DFSeal.size(r.capsuleBytes) + ' encrypted block. The picture data was not touched. Keep the passphrase: without it the metadata cannot be brought back.',
+          save: 'Save sealed photo', note: '',
+        };
+        if (state.cur.origin === 'sample') state.sampleChain = true;
+        load(r.bytes, sealedName(name, info.format), 'sealed');
+      } else {
+        const r = await DFSeal.unseal(bytes, pass);
+        state.banner = r.verified
+          ? { title: 'Restored.', body: 'This file is byte for byte the original. Its SHA-256 matches the one recorded when it was sealed.', code: 'sha256 ' + r.sha256, save: 'Save restored photo', note: '' }
+          : { title: 'Restored, with a warning.', warn: true, body: 'The metadata is back, but the file was changed after it was sealed, so it is not identical to the original.', save: 'Save restored photo', note: '' };
+        load(r.bytes, restoredName(name, info.format), 'restored');
+      }
+      el.pass.value = ''; el.pass2.value = '';
+      el.pass.type = el.pass2.type = 'password'; el.showPass.checked = false;
+      show(el.copyBtn, false);
+      el.banner.scrollIntoView({ block: 'nearest', behavior: calm ? 'auto' : 'smooth' });
+    } catch (e) {
+      setErr(el.formErr, e && e.code ? e.message : 'Something went wrong while working on this file. Nothing was changed.');
+      render();
+    } finally {
+      state.busy = false;
+      el.goBtn.disabled = false; el.goBtn.classList.remove('busy');
+      el.goBtn.textContent = state.cur.info.capsule ? 'Unseal metadata' : 'Seal metadata';
+    }
+  }
+
+  async function takeFile(file) {
+    if (!file) return;
+    try {
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      const prev = { banner: state.banner, chain: state.sampleChain };
+      state.banner = null; state.sampleChain = false;
+      try { load(bytes, file.name || 'photo', 'user'); }
+      catch (e) { state.banner = prev.banner; state.sampleChain = prev.chain; throw e; }
+    } catch (e) {
+      setErr(el.fileErr, e && e.code ? e.message : 'That file could not be read.');
+    }
+  }
+
+  el.form.addEventListener('submit', submit);
+  el.saveBtn.addEventListener('click', save);
+  el.pickBtn.addEventListener('click', () => el.fileInput.click());
+  el.fileInput.addEventListener('change', () => { takeFile(el.fileInput.files[0]); el.fileInput.value = ''; });
+  ['dragenter', 'dragover'].forEach((t) => el.bench.addEventListener(t, (e) => { e.preventDefault(); el.bench.classList.add('drag'); }));
+  ['dragleave', 'drop'].forEach((t) => el.bench.addEventListener(t, (e) => { e.preventDefault(); el.bench.classList.remove('drag'); }));
+  el.bench.addEventListener('drop', (e) => takeFile(e.dataTransfer && e.dataTransfer.files[0]));
+  document.addEventListener('paste', (e) => { const f = e.clipboardData && e.clipboardData.files && e.clipboardData.files[0]; if (f) takeFile(f); });
+  el.showPass.addEventListener('change', () => { el.pass.type = el.pass2.type = el.showPass.checked ? 'text' : 'password'; });
+  el.genBtn.addEventListener('click', () => {
+    const A = '23456789ABCDEFGHJKMNPQRSTVWXYZ', pick = [];
+    while (pick.length < 20) for (const v of crypto.getRandomValues(new Uint8Array(32))) if (v < 240 && pick.length < 20) pick.push(A[v % 30]);
+    const s = pick.join('').replace(/(.{5})(?=.)/g, '$1-');
+    el.pass.value = el.pass2.value = s;
+    el.pass.type = el.pass2.type = 'text'; el.showPass.checked = true;
+    el.copyBtn.textContent = 'Copy'; show(el.copyBtn, true);
+    setErr(el.formErr, '');
+  });
+  el.copyBtn.addEventListener('click', () => {
+    const done = () => { el.copyBtn.textContent = 'Copied'; };
+    const pick = () => { el.pass.focus(); el.pass.select(); el.copyBtn.textContent = 'Selected, copy it now'; };
+    try { navigator.clipboard.writeText(el.pass.value).then(done, pick); } catch (e) { pick(); }
+  });
+
+  /* Sample photo: drawn here, then given the kind of Exif a phone writes, so the page opens on a working example. */
+  function drawSample() {
+    const c = document.createElement('canvas'); c.width = 960; c.height = 640;
+    const g = c.getContext('2d');
+    const sky = g.createLinearGradient(0, 0, 0, 430);
+    sky.addColorStop(0, '#0d1a30'); sky.addColorStop(0.55, '#34609e'); sky.addColorStop(0.86, '#d79a6a'); sky.addColorStop(1, '#f0c890');
+    g.fillStyle = sky; g.fillRect(0, 0, 960, 640);
+    g.fillStyle = '#f6dcae'; g.beginPath(); g.arc(660, 418, 34, 0, 7); g.fill();
+    const ridges = [['#40679c', 400, 26, 0.011, 0.4], ['#2c4c7c', 440, 34, 0.008, 2.1], ['#1d355a', 486, 30, 0.013, 4.0], ['#12233f', 540, 24, 0.017, 1.2], ['#0a1526', 592, 18, 0.023, 5.3]];
+    for (const [col, y, amp, f, ph] of ridges) {
+      g.fillStyle = col; g.beginPath(); g.moveTo(0, 640);
+      for (let x = 0; x <= 960; x += 6) g.lineTo(x, y + Math.sin(x * f + ph) * amp + Math.sin(x * f * 2.7 + ph * 1.9) * amp * 0.35);
+      g.lineTo(960, 640); g.fill();
+    }
+    g.fillStyle = '#060d18';
+    for (let x = 40; x < 960; x += 74) g.fillRect(x, 584 + Math.sin(x * 0.023 + 5.3) * 18, 4, 30);
+    return new Promise((res) => c.toBlob(res, 'image/jpeg', 0.84));
+  }
+  async function loadSample() {
+    try {
+      const blob = await drawSample();
+      const raw = new Uint8Array(await blob.arrayBuffer());
+      const tiff = DFSeal.buildTiff({
+        ifd0: [[0x010F, 2, 'Apple'], [0x0110, 2, 'iPhone 15 Pro'], [0x0112, 3, 1], [0x0131, 2, '17.6.1'], [0x0132, 2, '2026:09:19 18:42:08']],
+        exif: [[0x9003, 2, '2026:09:19 18:42:08'], [0x9011, 2, '-05:00'], [0xA434, 2, 'iPhone 15 Pro back triple camera 6.765mm f/1.78']],
+        gps: [[1, 2, 'N'], [2, 5, [[36, 1], [8, 1], [5892, 100]]], [3, 2, 'W'], [4, 5, [[86, 1], [48, 1], [4788, 100]]], [6, 5, [[166, 1]]]],
+      });
+      if (state.cur) return;
+      load(DFSeal.addJpegSegments(raw, [DFSeal.exifSegment(tiff)]), 'sample-ridge.jpg', 'sample');
+    } catch (e) {
+      el.fname.textContent = 'No photo loaded';
+      el.readout.replaceChildren();
+      el.mapHint.textContent = 'Choose a JPEG or PNG to see what it carries.';
+      show(el.form, false);
+    }
+  }
+  loadSample();
+})();
+</script>
+
+</body></html>
