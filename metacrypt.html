@@ -1,4 +1,4 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>Metadata Seal</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
 <style>
@@ -130,6 +130,38 @@ h1 em{font-style:normal;color:var(--accent)}
 .banner p{color:var(--fg);font-size:14px;max-width:60ch}
 .banner code{font-family:var(--mono);font-size:12.5px;color:var(--dim);overflow-wrap:anywhere}
 
+/* full metadata list */
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.metahead{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:10px 16px}
+.metahead>div:first-child{display:flex;flex-direction:column;gap:6px;min-width:0;flex:1 1 16rem}
+.metasum{font-size:13.5px;color:var(--dim);max-width:62ch}
+.tools{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.tools input{min-height:34px;width:min(100%,14rem);padding:0 10px;border-radius:8px;border:1px solid var(--line-strong);background:var(--bg);font-size:13px}
+.tools input:focus{outline:2px solid var(--accent);outline-offset:0;border-color:var(--accent)}
+.groups{display:flex;flex-direction:column;border-top:1px solid var(--line)}
+.grp{border-bottom:1px solid var(--line)}
+.grp>summary{display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px;min-height:46px;padding-block:8px;cursor:pointer;list-style:none}
+.grp>summary::-webkit-details-marker{display:none}
+.grp>summary::before{content:"";width:7px;height:7px;flex:none;margin-inline:3px 5px;border-right:1.5px solid var(--faint);border-bottom:1.5px solid var(--faint);transform:rotate(-45deg);transition:transform .2s var(--ease)}
+.grp[open]>summary::before{transform:rotate(45deg)}
+.grp .t{font-weight:600;font-size:14px}
+.grp .n{font-family:var(--mono);font-size:12px;color:var(--faint);font-variant-numeric:tabular-nums}
+.grp .st{margin-left:auto}
+.kv{display:grid;grid-template-columns:minmax(8.5rem,13rem) minmax(0,1fr);gap:2px 16px;padding:7px 0 7px 22px;border-top:1px solid var(--line)}
+.kv .k{font-size:13px;color:var(--dim);overflow-wrap:anywhere}
+.kv .k small{display:block;font-family:var(--mono);font-size:11px;color:var(--faint)}
+.kv .v{font-family:var(--mono);font-size:12.5px;overflow-wrap:anywhere;font-variant-numeric:tabular-nums;white-space:pre-wrap}
+.kv .v.cipher{color:var(--accent)}
+.kv .v a{margin-left:8px;font-family:var(--sans)}
+.kv.derived .k{color:var(--fg);font-weight:500}
+@media (max-width:560px){.kv{grid-template-columns:minmax(0,1fr);padding-left:2px;gap:0}}
+.struct summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;min-height:30px;font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+.struct summary::-webkit-details-marker{display:none}
+.struct summary::before{content:"";width:7px;height:7px;flex:none;border-right:1.5px solid var(--faint);border-bottom:1.5px solid var(--faint);transform:rotate(-45deg);transition:transform .2s var(--ease)}
+.struct[open] summary::before{transform:rotate(45deg)}
+.struct .inner{display:flex;flex-direction:column;gap:12px;padding-top:10px}
+.lead2{font-size:13.5px;color:var(--dim);max-width:60ch}
+
 /* notes */
 .notes{display:grid;grid-template-columns:minmax(0,1fr);gap:36px;padding-top:clamp(24px,4vw,40px);border-top:1px solid var(--line)}
 @media (min-width:980px){.notes{grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:72px}}
@@ -154,11 +186,11 @@ h1 em{font-style:normal;color:var(--accent)}
 
   <main class="grid">
     <section class="head">
-      <h1>Lock what a photo says about you. <em>Keep the photo.</em></h1>
-      <p class="lede">Location, device and timestamps are encrypted inside the file with a passphrase. The picture still opens anywhere. The passphrase puts every byte back.</p>
+      <h1>See everything a photo says about you. <em>Then lock it.</em></h1>
+      <p class="lede">Every Exif, GPS, XMP and IPTC field is listed in full. Then you can encrypt them inside the file with a passphrase. The picture still opens anywhere, and the passphrase puts every byte back.</p>
     </section>
 
-    <section class="bench" id="bench" aria-label="Seal workbench">
+    <section class="bench" id="bench" aria-label="Metadata workbench">
       <div class="block">
         <div class="filebar">
           <div class="thumb"><img id="preview" alt="Preview of the loaded photo"></div>
@@ -186,23 +218,30 @@ h1 em{font-style:normal;color:var(--accent)}
         </div>
       </div>
 
-      <div class="block">
-        <h2>File structure</h2>
-        <ol class="map" id="map"></ol>
-        <p class="hint" id="mapHint"></p>
+      <div class="block" id="capBlock" hidden>
+        <h2>Encrypted block</h2>
+        <dl class="readout" id="capReadout"></dl>
       </div>
 
-      <div class="block">
-        <h2 id="readTitle">What this file gives away</h2>
-        <dl class="readout" id="readout">
-          <div><dt><span class="skel" style="display:block;width:70%"></span></dt><dd><span class="skel" style="display:block;width:85%"></span></dd></div>
-          <div><dt><span class="skel" style="display:block;width:50%"></span></dt><dd><span class="skel" style="display:block;width:60%"></span></dd></div>
-          <div><dt><span class="skel" style="display:block;width:60%"></span></dt><dd><span class="skel" style="display:block;width:75%"></span></dd></div>
-        </dl>
+      <div class="block" id="metaBlock">
+        <div class="metahead">
+          <div>
+            <h2 id="metaTitle">Metadata in this file</h2>
+            <p class="metasum" id="metaSum" aria-live="polite">Reading every field in the file</p>
+          </div>
+          <div class="tools">
+            <label class="sr" for="filter">Filter fields</label>
+            <input type="text" id="filter" placeholder="Filter fields, e.g. GPS" autocomplete="off" spellcheck="false">
+            <button class="btn small" type="button" id="toggleAll">Collapse all</button>
+          </div>
+        </div>
+        <div class="groups" id="groups"></div>
+        <p class="hint" id="noMatch" hidden>No field matches that filter.</p>
       </div>
 
       <form class="block" id="form" novalidate>
-        <h2 id="formTitle">Seal it</h2>
+        <h2 id="formTitle">Encrypt it</h2>
+        <p class="lead2" id="formLead"></p>
         <div class="fields two" id="fields">
           <div class="field">
             <label for="pass">Passphrase</label>
@@ -220,15 +259,25 @@ h1 em{font-style:normal;color:var(--accent)}
           <button class="btn small" type="button" id="genBtn">Generate one</button>
           <button class="btn small" type="button" id="copyBtn" hidden>Copy</button>
         </div>
-        <label class="check" id="orientRow" hidden><input type="checkbox" id="keepOrient" checked><span>Leave the rotation flag readable so the sealed photo is not shown sideways.</span></label>
+        <label class="check" id="orientRow" hidden><input type="checkbox" id="keepOrient" checked><span>Leave the rotation flag readable so the encrypted photo is not shown sideways.</span></label>
         <div class="row">
-          <button class="btn primary" type="submit" id="goBtn">Seal metadata</button>
+          <button class="btn primary" type="submit" id="goBtn">Encrypt metadata</button>
         </div>
       </form>
 
       <div class="block" id="empty" hidden>
-        <h2>Nothing to seal</h2>
-        <p class="hint">This file carries no metadata. Choose another photo, or use the one you have as it is.</p>
+        <h2>Nothing to encrypt</h2>
+        <p class="hint">This file carries no metadata beyond what the picture needs. Choose another photo, or use this one as it is.</p>
+      </div>
+
+      <div class="block">
+        <details class="struct" id="structure">
+          <summary>File structure</summary>
+          <div class="inner">
+            <ol class="map" id="map"></ol>
+            <p class="hint" id="mapHint"></p>
+          </div>
+        </details>
       </div>
     </section>
 
@@ -247,20 +296,20 @@ h1 em{font-style:normal;color:var(--accent)}
 
   <section class="notes">
     <div>
-      <h2>How the seal works</h2>
+      <h2>How the encryption works</h2>
       <ol class="steps">
-        <li><span><b>The file is split into its parts.</b> Everything the picture does not need is pulled out: Exif and GPS, XMP, IPTC, comments, embedded thumbnails, and anything stored after the image.</span></li>
-        <li><span><b>Those parts are encrypted.</b> Your passphrase runs through 600,000 rounds of PBKDF2-SHA256 with a fresh random salt, and the resulting key encrypts the parts with AES-256-GCM.</span></li>
+        <li><span><b>The file is read part by part.</b> Every field is listed first and nothing changes. Everything the picture does not need is marked: Exif and GPS, XMP, IPTC, comments, embedded thumbnails, and anything stored after the image.</span></li>
+        <li><span><b>Those parts are encrypted when you choose to.</b> Your passphrase runs through 600,000 rounds of PBKDF2-SHA256 with a fresh random salt, and the resulting key encrypts the parts with AES-256-GCM.</span></li>
         <li><span><b>The ciphertext goes back into the file</b> as one private block that photo viewers skip. The compressed picture data is copied as it is.</span></li>
-        <li><span><b>Unsealing puts every part back where it was</b> and compares the result with a SHA-256 of the original, so you know the file is identical.</span></li>
+        <li><span><b>Decrypting puts every part back where it was</b> and compares the result with a SHA-256 of the original, so you know the file is identical.</span></li>
       </ol>
     </div>
     <div>
       <h2>What it does not do</h2>
       <ul class="limits">
         <li><b>It does not change the picture.</b>A street sign or house number in the frame is still in the frame.</li>
-        <li><b>It does not hide that a seal exists.</b>Anyone can see an encrypted block and its size, rounded up to the next kilobyte.</li>
-        <li><b>It does not survive re-encoding.</b>Social networks and most messaging apps rebuild photos on upload and drop the block. Send sealed photos as files: email attachment, shared drive, USB.</li>
+        <li><b>It does not hide that something is encrypted.</b>Anyone can see an encrypted block and its size, rounded up to the next kilobyte.</li>
+        <li><b>It does not survive re-encoding.</b>Social networks and most messaging apps rebuild photos on upload and drop the block. Send encrypted photos as files: email attachment, shared drive, USB.</li>
         <li><b>It cannot recover a lost passphrase.</b>The photo still opens. The metadata stays locked.</li>
         <li><b>It does not read HEIC, RAW or video.</b>JPEG and PNG only.</li>
       </ul>
@@ -313,6 +362,11 @@ const DFSeal = (() => {
     let c = 0xFFFFFFFF;
     for (const p of parts) for (let i = 0; i < p.length; i++) c = crcTable[(c ^ p[i]) & 255] ^ (c >>> 8);
     return (c ^ 0xFFFFFFFF) >>> 0;
+  }
+
+  function pngChunk(name, data) {
+    const type = enc.encode(name);
+    return cat([put32(data.length), type, data, put32(crc32([type, data]))]);
   }
 
   function formatOf(b) {
@@ -388,7 +442,7 @@ const DFSeal = (() => {
     } else if (m === 0xEE && is('Adobe')) {
       part.tag = 'APP14 Adobe';
     } else if (m === 0xEF && part.end - d >= 12 && JID.every((v, i) => b[d + i] === v)) {
-      part.role = 'capsule'; part.tag = 'Sealed capsule';
+      part.role = 'capsule'; part.tag = 'Encrypted block';
       part.seq = be16(b, d + 8); part.total = be16(b, d + 10); part.payloadStart = d + 12;
     } else if (m >= 0xE3 && m <= 0xEF) {
       part.role = 'seal'; part.tag = 'APP' + (m - 0xE0);
@@ -420,7 +474,7 @@ const DFSeal = (() => {
       if (end > n) throw fail('malformed', 'This PNG has a damaged chunk.');
       const part = { start: p, end, type, dataStart: p + 8, dataEnd: p + 8 + len, role: 'keep', tag: type };
       if (type === 'IHDR' && len >= 8) dims = { width: be32(b, p + 8), height: be32(b, p + 12) };
-      if (type === PNG_CAP) { part.role = 'capsule'; part.tag = 'Sealed capsule'; }
+      if (type === PNG_CAP) { part.role = 'capsule'; part.tag = 'Encrypted block'; }
       else if (!PNG_KEEP.has(type) && type.charCodeAt(0) >= 97) {
         part.role = 'seal';
         part.kind = type === 'eXIf' ? 'exif' : type === 'tEXt' || type === 'zTXt' || type === 'iTXt' ? 'text' : type === 'tIME' ? 'time' : 'other';
@@ -513,6 +567,7 @@ const DFSeal = (() => {
       if (type === 2) { raw = enc.encode(v + '\0'); cnt = raw.length; }
       else if (type === 3) raw = put16(v);
       else if (type === 4) raw = put32(v);
+      else if (type === 1 || type === 7) { raw = v; cnt = v.length; }
       else { raw = cat(v.map(([a, c]) => cat([put32(a), put32(c)]))); cnt = v.length; }
       const e = 2 + i * 12;
       head.set(put16(tag), e); head.set(put16(type), e + 2); head.set(put32(cnt), e + 4);
@@ -671,7 +726,10 @@ const DFSeal = (() => {
 
     let stub = null;
     const o = info.exif ? info.exif.orientation : 0;
-    if (info.format === 'jpeg' && opts.keepOrientation !== false && o >= 2 && o <= 8) stub = exifSegment(buildTiff({ ifd0: [[0x0112, 3, o]] }));
+    if (opts.keepOrientation !== false && o >= 2 && o <= 8) {
+      const tiff = buildTiff({ ifd0: [[0x0112, 3, o]] });
+      stub = info.format === 'jpeg' ? exifSegment(tiff) : pngChunk('eXIf', tiff);
+    }
 
     const body = [enc.encode('DFP1'), [stub ? 1 : 0, info.format === 'jpeg' ? 1 : 2], await sha256(b), put32(info.parts.length), put32(sealed.length)];
     let len = 46;
@@ -681,7 +739,7 @@ const DFSeal = (() => {
 
     let capsule;
     if (info.format === 'jpeg') capsule = jpegCapsule(blob);
-    else { const type = enc.encode(PNG_CAP); capsule = [cat([put32(blob.length), type, blob, put32(crc32([type, blob]))])]; }
+    else capsule = [pngChunk(PNG_CAP, blob)];
 
     const kept = info.parts.filter((p) => p.role === 'keep');
     let at = 0;
@@ -729,7 +787,449 @@ const DFSeal = (() => {
     return { bytes, verified: eq(got, hash), sha256: hex(got), parts: count };
   }
 
-  return { inspect, seal, unseal, size, buildTiff, exifSegment, addJpegSegments, ITER };
+  /* ---------- full metadata dump ---------- */
+  const N0 = { 0x00FE: 'NewSubfileType', 0x0100: 'ImageWidth', 0x0101: 'ImageHeight', 0x0102: 'BitsPerSample', 0x0103: 'Compression', 0x0106: 'PhotometricInterpretation', 0x010E: 'ImageDescription', 0x010F: 'Make', 0x0110: 'Model', 0x0112: 'Orientation', 0x0115: 'SamplesPerPixel', 0x011A: 'XResolution', 0x011B: 'YResolution', 0x011C: 'PlanarConfiguration', 0x0128: 'ResolutionUnit', 0x012D: 'TransferFunction', 0x0131: 'Software', 0x0132: 'ModifyDate', 0x013B: 'Artist', 0x013C: 'HostComputer', 0x013E: 'WhitePoint', 0x013F: 'PrimaryChromaticities', 0x0211: 'YCbCrCoefficients', 0x0212: 'YCbCrSubSampling', 0x0213: 'YCbCrPositioning', 0x0214: 'ReferenceBlackWhite', 0x02BC: 'XMP', 0x8298: 'Copyright', 0x83BB: 'IPTC-NAA', 0x8649: 'PhotoshopImageResources', 0x8773: 'ICCProfile', 0x9C9B: 'XPTitle', 0x9C9C: 'XPComment', 0x9C9D: 'XPAuthor', 0x9C9E: 'XPKeywords', 0x9C9F: 'XPSubject', 0xC4A5: 'PrintIM' };
+  const NX = { 0x829A: 'ExposureTime', 0x829D: 'FNumber', 0x8822: 'ExposureProgram', 0x8824: 'SpectralSensitivity', 0x8827: 'ISO', 0x8828: 'OECF', 0x8830: 'SensitivityType', 0x8831: 'StandardOutputSensitivity', 0x8832: 'RecommendedExposureIndex', 0x8833: 'ISOSpeed', 0x9000: 'ExifVersion', 0x9003: 'DateTimeOriginal', 0x9004: 'CreateDate', 0x9010: 'OffsetTime', 0x9011: 'OffsetTimeOriginal', 0x9012: 'OffsetTimeDigitized', 0x9101: 'ComponentsConfiguration', 0x9102: 'CompressedBitsPerPixel', 0x9201: 'ShutterSpeedValue', 0x9202: 'ApertureValue', 0x9203: 'BrightnessValue', 0x9204: 'ExposureCompensation', 0x9205: 'MaxApertureValue', 0x9206: 'SubjectDistance', 0x9207: 'MeteringMode', 0x9208: 'LightSource', 0x9209: 'Flash', 0x920A: 'FocalLength', 0x9214: 'SubjectArea', 0x927C: 'MakerNote', 0x9286: 'UserComment', 0x9290: 'SubSecTime', 0x9291: 'SubSecTimeOriginal', 0x9292: 'SubSecTimeDigitized', 0xA000: 'FlashpixVersion', 0xA001: 'ColorSpace', 0xA002: 'ExifImageWidth', 0xA003: 'ExifImageHeight', 0xA004: 'RelatedSoundFile', 0xA20B: 'FlashEnergy', 0xA20E: 'FocalPlaneXResolution', 0xA20F: 'FocalPlaneYResolution', 0xA210: 'FocalPlaneResolutionUnit', 0xA214: 'SubjectLocation', 0xA215: 'ExposureIndex', 0xA217: 'SensingMethod', 0xA300: 'FileSource', 0xA301: 'SceneType', 0xA302: 'CFAPattern', 0xA401: 'CustomRendered', 0xA402: 'ExposureMode', 0xA403: 'WhiteBalance', 0xA404: 'DigitalZoomRatio', 0xA405: 'FocalLengthIn35mmFormat', 0xA406: 'SceneCaptureType', 0xA407: 'GainControl', 0xA408: 'Contrast', 0xA409: 'Saturation', 0xA40A: 'Sharpness', 0xA40B: 'DeviceSettingDescription', 0xA40C: 'SubjectDistanceRange', 0xA420: 'ImageUniqueID', 0xA430: 'OwnerName', 0xA431: 'SerialNumber', 0xA432: 'LensInfo', 0xA433: 'LensMake', 0xA434: 'LensModel', 0xA435: 'LensSerialNumber', 0xA460: 'CompositeImage', 0xA500: 'Gamma' };
+  const NG = { 0: 'GPSVersionID', 1: 'GPSLatitudeRef', 2: 'GPSLatitude', 3: 'GPSLongitudeRef', 4: 'GPSLongitude', 5: 'GPSAltitudeRef', 6: 'GPSAltitude', 7: 'GPSTimeStamp', 8: 'GPSSatellites', 9: 'GPSStatus', 10: 'GPSMeasureMode', 11: 'GPSDOP', 12: 'GPSSpeedRef', 13: 'GPSSpeed', 14: 'GPSTrackRef', 15: 'GPSTrack', 16: 'GPSImgDirectionRef', 17: 'GPSImgDirection', 18: 'GPSMapDatum', 19: 'GPSDestLatitudeRef', 20: 'GPSDestLatitude', 21: 'GPSDestLongitudeRef', 22: 'GPSDestLongitude', 23: 'GPSDestBearingRef', 24: 'GPSDestBearing', 25: 'GPSDestDistanceRef', 26: 'GPSDestDistance', 27: 'GPSProcessingMethod', 28: 'GPSAreaInformation', 29: 'GPSDateStamp', 30: 'GPSDifferential', 31: 'GPSHPositioningError' };
+  const NI = { 1: 'InteropIndex', 2: 'InteropVersion' };
+  const NAMES = { ifd0: N0, ifd1: N0, exif: NX, gps: NG, interop: NI };
+  const SKIP = { ifd0: new Set([0x8769, 0x8825, 0x0111, 0x0117]), ifd1: new Set([0x0111, 0x0117, 0x0201, 0x0202]), exif: new Set([0xA005]), gps: new Set(), interop: new Set() };
+  const ENUMS = {
+    0x0103: { 1: 'Uncompressed', 6: 'JPEG (old style)', 7: 'JPEG' },
+    0x0106: { 0: 'WhiteIsZero', 1: 'BlackIsZero', 2: 'RGB', 6: 'YCbCr' },
+    0x0112: { 1: 'Normal', 2: 'Mirrored horizontally', 3: 'Rotated 180°', 4: 'Mirrored vertically', 5: 'Mirrored, rotated 270°', 6: 'Rotated 90° clockwise', 7: 'Mirrored, rotated 90°', 8: 'Rotated 270° clockwise' },
+    0x011C: { 1: 'Chunky', 2: 'Planar' },
+    0x0128: { 1: 'None', 2: 'inches', 3: 'cm' },
+    0x0213: { 1: 'Centered', 2: 'Co-sited' },
+    0x8822: { 0: 'Not defined', 1: 'Manual', 2: 'Program (normal)', 3: 'Aperture priority', 4: 'Shutter priority', 5: 'Creative (slow)', 6: 'Action (fast)', 7: 'Portrait', 8: 'Landscape' },
+    0x8830: { 0: 'Unknown', 1: 'Standard output sensitivity', 2: 'Recommended exposure index', 3: 'ISO speed', 4: 'SOS and REI', 5: 'SOS and ISO speed', 6: 'REI and ISO speed', 7: 'SOS, REI and ISO speed' },
+    0x9207: { 0: 'Unknown', 1: 'Average', 2: 'Center-weighted average', 3: 'Spot', 4: 'Multi-spot', 5: 'Multi-segment', 6: 'Partial', 255: 'Other' },
+    0x9208: { 0: 'Unknown', 1: 'Daylight', 2: 'Fluorescent', 3: 'Tungsten', 4: 'Flash', 9: 'Fine weather', 10: 'Cloudy', 11: 'Shade', 12: 'Daylight fluorescent', 13: 'Day white fluorescent', 14: 'Cool white fluorescent', 15: 'White fluorescent', 17: 'Standard light A', 18: 'Standard light B', 19: 'Standard light C', 20: 'D55', 21: 'D65', 22: 'D75', 23: 'D50', 24: 'ISO studio tungsten', 255: 'Other' },
+    0xA001: { 1: 'sRGB', 2: 'Adobe RGB', 65533: 'Wide gamut RGB', 65535: 'Uncalibrated' },
+    0xA210: { 1: 'None', 2: 'inches', 3: 'cm', 4: 'mm', 5: 'µm' },
+    0xA217: { 1: 'Not defined', 2: 'One-chip color area', 3: 'Two-chip color area', 4: 'Three-chip color area', 5: 'Color sequential area', 7: 'Trilinear', 8: 'Color sequential linear' },
+    0xA401: { 0: 'Normal', 1: 'Custom' },
+    0xA402: { 0: 'Auto', 1: 'Manual', 2: 'Auto bracket' },
+    0xA403: { 0: 'Auto', 1: 'Manual' },
+    0xA406: { 0: 'Standard', 1: 'Landscape', 2: 'Portrait', 3: 'Night' },
+    0xA407: { 0: 'None', 1: 'Low gain up', 2: 'High gain up', 3: 'Low gain down', 4: 'High gain down' },
+    0xA408: { 0: 'Normal', 1: 'Low', 2: 'High' },
+    0xA409: { 0: 'Normal', 1: 'Low', 2: 'High' },
+    0xA40A: { 0: 'Normal', 1: 'Soft', 2: 'Hard' },
+    0xA40C: { 0: 'Unknown', 1: 'Macro', 2: 'Close', 3: 'Distant' },
+    0xA460: { 0: 'Unknown', 1: 'Not a composite image', 2: 'General composite image', 3: 'Composite image captured while shooting' },
+  };
+  const DATE_TAGS = new Set([0x0132, 0x9003, 0x9004]);
+  const GROUPS = [
+    ['image', 'Image', false], ['ifd0', 'Exif: image and camera', true], ['exif', 'Exif: capture settings', true], ['gps', 'GPS location', true],
+    ['interop', 'Exif: interoperability', true], ['ifd1', 'Exif: embedded thumbnail', true], ['xmp', 'XMP', true], ['iptc', 'IPTC captions and credits', true],
+    ['comment', 'JPEG comment', true], ['text', 'PNG text', true], ['time', 'PNG modified time', true], ['trailer', 'Data after the image', true],
+    ['mpf', 'Multi-picture index', true], ['other', 'Other app data', true], ['jfif', 'JPEG header', false], ['icc', 'ICC color profile', false], ['png', 'PNG color and density', false],
+  ];
+  const IPTC2 = { 0: 'RecordVersion', 3: 'ObjectTypeReference', 4: 'ObjectAttributeReference', 5: 'ObjectName', 7: 'EditStatus', 8: 'EditorialUpdate', 10: 'Urgency', 12: 'SubjectReference', 15: 'Category', 20: 'SupplementalCategories', 22: 'FixtureIdentifier', 25: 'Keywords', 26: 'ContentLocationCode', 27: 'ContentLocationName', 30: 'ReleaseDate', 35: 'ReleaseTime', 37: 'ExpirationDate', 40: 'SpecialInstructions', 42: 'ActionAdvised', 45: 'ReferenceService', 47: 'ReferenceDate', 50: 'ReferenceNumber', 55: 'DateCreated', 60: 'TimeCreated', 62: 'DigitalCreationDate', 63: 'DigitalCreationTime', 65: 'OriginatingProgram', 70: 'ProgramVersion', 75: 'ObjectCycle', 80: 'By-line', 85: 'By-lineTitle', 90: 'City', 92: 'Sub-location', 95: 'Province-State', 100: 'Country-PrimaryLocationCode', 101: 'Country-PrimaryLocationName', 103: 'OriginalTransmissionReference', 105: 'Headline', 110: 'Credit', 115: 'Source', 116: 'CopyrightNotice', 118: 'Contact', 120: 'Caption-Abstract', 122: 'Writer-Editor', 130: 'ImageType', 131: 'ImageOrientation', 135: 'LanguageIdentifier' };
+
+  const fmtNum = (n, d = 3) => (!isFinite(n) ? (n > 0 ? 'Infinity' : String(n)) : String(+n.toFixed(d)));
+  const fmtDate = (s) => s.replace(/^(\d{4}):(\d\d):(\d\d)/, '$1-$2-$3');
+  const pad2 = (n) => String(n).padStart(2, '0');
+  const hex4 = (n) => '0x' + n.toString(16).toUpperCase().padStart(4, '0');
+  const printable = (b) => b.length > 0 && Array.from(b).every((c) => c === 0 || (c >= 32 && c < 127));
+  const hexPrev = (b, n = 16) => hex(b.subarray(0, n)).replace(/(..)/g, '$1 ').trim() + (b.length > n ? ' … (' + size(b.length) + ')' : '');
+  const secs = (t) => (!(t > 0) ? '0 s' : t >= 1 ? fmtNum(t, 1) + ' s' : '1/' + Math.round(1 / t) + ' s');
+  function cleanText(s) { return s.replace(/\0+$/g, '').replace(/\s+$/g, ''); }
+
+  async function inflate(bytes) {
+    if (typeof DecompressionStream === 'undefined' || typeof Response === 'undefined') return null;
+    try {
+      const ds = new DecompressionStream('deflate'), w = ds.writable.getWriter();
+      w.write(bytes).catch(() => {}); w.close().catch(() => {});
+      return new Uint8Array(await new Response(ds.readable).arrayBuffer());
+    } catch (e) { return null; }
+  }
+
+  function walkTiff(t) {
+    if (t.length < 8) return null;
+    const le = t[0] === 0x49 && t[1] === 0x49;
+    if (!le && !(t[0] === 0x4D && t[1] === 0x4D)) return null;
+    const dv = new DataView(t.buffer, t.byteOffset, t.byteLength);
+    const r16 = (o) => dv.getUint16(o, le), r32 = (o) => dv.getUint32(o, le);
+    if (r16(2) !== 42) return null;
+    const SZ = [0, 1, 1, 2, 4, 8, 1, 1, 2, 4, 8, 4, 8];
+    const seen = new Set(), list = [];
+    const readIfd = (off, name) => {
+      if (!off || off + 2 > t.length || seen.has(off) || seen.size > 12) return 0;
+      seen.add(off);
+      const n = Math.min(r16(off), 1024), entries = [];
+      for (let i = 0; i < n; i++) {
+        const e = off + 2 + i * 12;
+        if (e + 12 > t.length) break;
+        const type = r16(e + 2), cnt = r32(e + 4), unit = SZ[type] || 0, sz = unit * cnt;
+        const vo = sz <= 4 ? e + 8 : r32(e + 8);
+        entries.push({ ifd: name, tag: r16(e), type, cnt, off: vo, size: sz, ok: unit > 0 && vo + sz <= t.length });
+      }
+      list.push(...entries);
+      for (const e of entries) {
+        if (!e.ok || e.type !== 4) continue;
+        if (name === 'ifd0' && e.tag === 0x8769) readIfd(r32(e.off), 'exif');
+        else if (name === 'ifd0' && e.tag === 0x8825) readIfd(r32(e.off), 'gps');
+        else if (name === 'exif' && e.tag === 0xA005) readIfd(r32(e.off), 'interop');
+      }
+      const nx = off + 2 + n * 12;
+      return nx + 4 <= t.length ? r32(nx) : 0;
+    };
+    const next = readIfd(r32(4), 'ifd0');
+    if (next) readIfd(next, 'ifd1');
+    return { le, dv, t, list };
+  }
+
+  function tiffValue(w, e) {
+    const { t, dv, le } = w, o = e.off, n = Math.min(e.cnt, 4096);
+    if (e.type === 2) return utf.decode(t.subarray(o, o + e.cnt)).split('\0')[0].trim();
+    if (e.type === 1 || e.type === 6 || e.type === 7) return t.subarray(o, o + e.cnt);
+    const out = [];
+    for (let i = 0; i < n; i++) {
+      switch (e.type) {
+        case 3: out.push(dv.getUint16(o + i * 2, le)); break;
+        case 8: out.push(dv.getInt16(o + i * 2, le)); break;
+        case 4: out.push(dv.getUint32(o + i * 4, le)); break;
+        case 9: out.push(dv.getInt32(o + i * 4, le)); break;
+        case 11: out.push(dv.getFloat32(o + i * 4, le)); break;
+        case 12: out.push(dv.getFloat64(o + i * 8, le)); break;
+        case 5: case 10: {
+          const a = e.type === 5 ? dv.getUint32(o + i * 8, le) : dv.getInt32(o + i * 8, le);
+          const d = e.type === 5 ? dv.getUint32(o + i * 8 + 4, le) : dv.getInt32(o + i * 8 + 4, le);
+          out.push(d ? a / d : a ? (a > 0 ? Infinity : -Infinity) : 0);
+          break;
+        }
+        default: break;
+      }
+    }
+    return out;
+  }
+
+  function userComment(b, le) {
+    if (b.length < 8) return hexPrev(b);
+    const id = lat.decode(b.subarray(0, 8)).replace(/\0/g, '').trim(), body = b.subarray(8);
+    let s;
+    if (id === 'UNICODE') s = new TextDecoder(le ? 'utf-16le' : 'utf-16be').decode(body);
+    else if (id === 'JIS') return '(JIS-encoded text, ' + size(body.length) + ')';
+    else { try { s = new TextDecoder('utf-8', { fatal: true }).decode(body); } catch (e) { s = lat.decode(body); } }
+    return cleanText(s) || '(empty)';
+  }
+
+  function fmtBytes(tag, b, w) {
+    const ascii = () => lat.decode(b).replace(/\0+$/g, '');
+    switch (tag) {
+      case 0x9000: case 0xA000: case 0x0002: { const s = ascii(); return /^\d{4}$/.test(s) ? (+s.slice(0, 2)) + '.' + s.slice(2) : s; }
+      case 0x9101: return Array.from(b).map((c) => ['-', 'Y', 'Cb', 'Cr', 'R', 'G', 'B'][c] || String(c)).join(', ');
+      case 0x9286: return userComment(b, w.le);
+      case 0x927C: {
+        const sig = lat.decode(b.subarray(0, 16)).split('\0')[0];
+        return size(b.length) + ' of manufacturer data, not decoded' + (sig.length >= 3 && /^[\x20-\x7e]+$/.test(sig) ? ' (' + sig + ')' : '');
+      }
+      case 0x9C9B: case 0x9C9C: case 0x9C9D: case 0x9C9E: case 0x9C9F: return cleanText(new TextDecoder('utf-16le').decode(b)) || '(empty)';
+      case 0xA300: return b[0] === 3 ? 'Digital camera' : hexPrev(b);
+      case 0xA301: return b[0] === 1 ? 'Directly photographed' : hexPrev(b);
+      case 0xC4A5: return size(b.length) + ' of print-manager data';
+      default: return printable(b) ? ascii() : hexPrev(b);
+    }
+  }
+
+  function fmtFlash(v) {
+    const f = [v & 1 ? 'Fired' : 'Did not fire'], mode = (v >> 3) & 3, ret = (v >> 1) & 3;
+    if (mode === 1) f.push('compulsory firing'); else if (mode === 2) f.push('compulsory suppression'); else if (mode === 3) f.push('auto mode');
+    if (ret === 2) f.push('return not detected'); else if (ret === 3) f.push('return detected');
+    if (v & 32) f.push('no flash function');
+    if (v & 64) f.push('red-eye reduction');
+    return f.join(', ');
+  }
+
+  function dms(v, ref) {
+    return fmtNum(v[0], 0) + '° ' + fmtNum(v[1], 0) + '′ ' + fmtNum(v[2], 2) + '″' + (ref ? ' ' + ref : '');
+  }
+
+  function fmtNums(v) {
+    if (!v.length) return '(empty)';
+    const shown = v.slice(0, 24).map((x) => fmtNum(x, 4)).join(', ');
+    return shown + (v.length > 24 ? ' … (' + v.length + ' values)' : '');
+  }
+
+  function fmtGps(tag, v, g, w) {
+    const one = Array.isArray(v) && v.length === 1 ? v[0] : undefined;
+    const s = typeof v === 'string' ? v : '';
+    const letter = (t) => { const r = g.get(t); return typeof r === 'string' ? r.toUpperCase().slice(0, 1) : ''; };
+    const dist = { K: 'km', M: 'miles', N: 'nautical miles' };
+    switch (tag) {
+      case 0: return v instanceof Uint8Array ? Array.from(v).join('.') : String(v);
+      case 1: return { N: 'North', S: 'South' }[s.toUpperCase()] || s;
+      case 3: return { E: 'East', W: 'West' }[s.toUpperCase()] || s;
+      case 2: return Array.isArray(v) && v.length === 3 ? dms(v, letter(1)) : fmtNums(v);
+      case 4: return Array.isArray(v) && v.length === 3 ? dms(v, letter(3)) : fmtNums(v);
+      case 20: return Array.isArray(v) && v.length === 3 ? dms(v, letter(19)) : fmtNums(v);
+      case 22: return Array.isArray(v) && v.length === 3 ? dms(v, letter(21)) : fmtNums(v);
+      case 5: return (v instanceof Uint8Array ? v[0] : one) === 1 ? 'Below sea level' : 'Above sea level';
+      case 6: return one !== undefined ? fmtNum(one, 1) + ' m' : fmtNums(v);
+      case 7: return Array.isArray(v) && v.length === 3 ? pad2(v[0]) + ':' + pad2(v[1]) + ':' + (v[2] < 10 ? '0' : '') + fmtNum(v[2], 2) + ' UTC' : fmtNums(v);
+      case 9: return { A: 'Measurement in progress', V: 'Measurement interrupted' }[s.toUpperCase()] || s;
+      case 10: return { 2: '2-dimensional', 3: '3-dimensional' }[s] || s;
+      case 12: return { K: 'km/h', M: 'mph', N: 'knots' }[s.toUpperCase()] || s;
+      case 25: return dist[s.toUpperCase()] || s;
+      case 13: return one !== undefined ? fmtNum(one, 2) + ' ' + ({ K: 'km/h', M: 'mph', N: 'knots' }[letter(12)] || '') : fmtNums(v);
+      case 26: return one !== undefined ? fmtNum(one, 2) + ' ' + (dist[letter(25)] || '') : fmtNums(v);
+      case 14: case 16: case 23: return { T: 'True north', M: 'Magnetic north' }[s.toUpperCase()] || s;
+      case 15: case 17: case 24: return one !== undefined ? fmtNum(one, 2) + '°' : fmtNums(v);
+      case 27: case 28: return v instanceof Uint8Array ? userComment(v, w.le) : String(v);
+      case 29: return fmtDate(s);
+      case 30: return { 0: 'No correction', 1: 'Differential correction applied' }[one] || String(one);
+      case 31: return one !== undefined ? fmtNum(one, 1) + ' m' : fmtNums(v);
+      default: return typeof v === 'string' ? v : v instanceof Uint8Array ? fmtBytes(-1, v, w) : fmtNums(v);
+    }
+  }
+
+  function fmtEntry(ifd, e, v, w, g) {
+    const tag = e.tag;
+    if (ifd === 'gps') return fmtGps(tag, v, g, w);
+    const one = Array.isArray(v) && v.length === 1 ? v[0] : undefined;
+    if (ENUMS[tag] && one !== undefined) return ENUMS[tag][one] !== undefined ? ENUMS[tag][one] : String(one);
+    if (v instanceof Uint8Array) return fmtBytes(tag, v, w);
+    if (typeof v === 'string') return DATE_TAGS.has(tag) ? fmtDate(v) : v;
+    if (one !== undefined) {
+      switch (tag) {
+        case 0x829A: return secs(one);
+        case 0x829D: return 'f/' + fmtNum(one, 2);
+        case 0x9201: return secs(Math.pow(2, -one));
+        case 0x9202: case 0x9205: return 'f/' + fmtNum(Math.pow(2, one / 2), 1);
+        case 0x9204: return (one > 0 ? '+' : '') + fmtNum(one, 2) + ' EV';
+        case 0x9206: return isFinite(one) ? fmtNum(one, 2) + ' m' : 'Infinity';
+        case 0x920A: case 0xA405: return fmtNum(one, 3) + ' mm';
+        case 0x9209: return fmtFlash(one);
+        case 0xA404: return fmtNum(one, 2) + '×';
+        default: return fmtNum(one, 4);
+      }
+    }
+    if (tag === 0xA432 && v.length === 4) return fmtNum(v[0], 1) + '–' + fmtNum(v[1], 1) + ' mm, f/' + fmtNum(v[2], 1) + '–f/' + fmtNum(v[3], 1);
+    if (tag === 0x0212 && v.length === 2) return { '2,2': '4:2:0', '2,1': '4:2:2', '1,1': '4:4:4' }[v.join(',')] || v.join(', ');
+    return fmtNums(v);
+  }
+
+  function decodeXml(s) {
+    return s.replace(/<[^>]*>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'")
+      .replace(/&#(\d+);/g, (m, n) => String.fromCodePoint(+n)).replace(/&#x([0-9a-f]+);/gi, (m, n) => String.fromCodePoint(parseInt(n, 16))).replace(/&amp;/g, '&').trim();
+  }
+  function xmpRows(text) {
+    const rows = [], seen = new Set();
+    const add = (k, v) => { v = decodeXml(v); const id = k + '\0' + v; if (!seen.has(id) && rows.length < 250) { seen.add(id); rows.push({ k, v: clip(v, 1200) || '(empty)' }); } };
+    let m;
+    const descRe = /<rdf:Description\b([^>]*)>/g;
+    while ((m = descRe.exec(text))) {
+      const attrRe = /([\w.-]+:[\w.-]+)\s*=\s*"([^"]*)"/g; let a;
+      while ((a = attrRe.exec(m[1]))) { if (a[1].startsWith('xmlns') || a[1] === 'rdf:about') continue; add(a[1], a[2]); }
+    }
+    const boxRe = /<([\w.-]+:[\w.-]+)\b[^>]*>\s*<rdf:(Seq|Bag|Alt)\b[^>]*>([\s\S]*?)<\/rdf:\2>\s*<\/\1>/g;
+    while ((m = boxRe.exec(text))) {
+      const items = []; const liRe = /<rdf:li\b[^>]*>([\s\S]*?)<\/rdf:li>/g; let li;
+      while ((li = liRe.exec(m[3]))) items.push(decodeXml(li[1]));
+      add(m[1], items.join('; '));
+    }
+    const simple = /<([\w.-]+:[\w.-]+)\b[^>/]*>([^<]+)<\/\1>/g;
+    while ((m = simple.exec(text))) { if (!m[1].startsWith('rdf:') && !m[1].startsWith('x:')) add(m[1], m[2]); }
+    return rows;
+  }
+
+  function iptcRows(b, start, end) {
+    const rows = [];
+    let p = start + 14;
+    while (p + 12 <= end && str(b, p, 4) === '8BIM') {
+      const id = be16(b, p + 4), nameTotal = 1 + b[p + 6], q = p + 6 + nameTotal + (nameTotal & 1);
+      if (q + 4 > end) break;
+      const len = be32(b, q), ds = q + 4, de = Math.min(end, ds + len);
+      if (id === 0x0404) {
+        let i = ds;
+        while (i + 5 <= de && b[i] === 0x1C) {
+          const rec = b[i + 1], set = b[i + 2], n = be16(b, i + 3);
+          if (n & 0x8000 || i + 5 + n > de) break;
+          const data = b.subarray(i + 5, i + 5 + n);
+          if (rec === 2) {
+            let v;
+            if (set === 0 || set === 10 || set === 75) v = data.length === 2 && set === 0 ? String(be16(data, 0)) : lat.decode(data);
+            else { try { v = new TextDecoder('utf-8', { fatal: true }).decode(data); } catch (e) { v = lat.decode(data); } }
+            if (/^(55|30|37|47|62)$/.test(String(set)) && /^\d{8}$/.test(v)) v = v.slice(0, 4) + '-' + v.slice(4, 6) + '-' + v.slice(6);
+            rows.push({ k: IPTC2[set] || 'Dataset ' + set, v: clip(v, 1200) || '(empty)', tag: '2:' + set });
+          }
+          i += 5 + n;
+        }
+      }
+      p = ds + len + (len & 1);
+    }
+    return rows;
+  }
+
+  function iccRows(prof) {
+    if (prof.length < 132) return [{ k: 'Profile', v: size(prof.length) + ', too short to read' }];
+    const rows = [];
+    const sig = (o) => str(prof, o, 4).trim();
+    let desc = '';
+    try {
+      const n = Math.min(be32(prof, 128), 200);
+      for (let i = 0; i < n; i++) {
+        const e = 132 + i * 12;
+        if (e + 12 > prof.length) break;
+        if (str(prof, e, 4) !== 'desc') continue;
+        const o = be32(prof, e + 4), ty = str(prof, o, 4);
+        if (ty === 'desc') desc = cleanText(lat.decode(prof.subarray(o + 12, o + 12 + Math.max(0, be32(prof, o + 8)))));
+        else if (ty === 'mluc' && be32(prof, o + 8) > 0) { const len = be32(prof, o + 20), off = be32(prof, o + 24); desc = new TextDecoder('utf-16be').decode(prof.subarray(o + off, o + off + len)); }
+      }
+    } catch (e) { /* description stays empty */ }
+    if (desc) rows.push({ k: 'Description', v: clip(desc, 200) });
+    rows.push({ k: 'Color space', v: sig(16) }, { k: 'Connection space', v: sig(20) }, { k: 'Class', v: sig(12) });
+    rows.push({ k: 'Version', v: prof[8] + '.' + (prof[9] >> 4) });
+    const creator = sig(4); if (creator) rows.push({ k: 'Preferred CMM', v: creator });
+    rows.push({ k: 'Profile size', v: size(prof.length) });
+    return rows;
+  }
+
+  async function pngText(b, p) {
+    const d = b.subarray(p.dataStart, p.dataEnd), z = d.indexOf(0);
+    if (z < 0) return null;
+    const key = lat.decode(d.subarray(0, z));
+    if (p.type === 'tEXt') return { key, text: lat.decode(d.subarray(z + 1)), n: d.length };
+    if (p.type === 'zTXt') { const raw = await inflate(d.subarray(z + 2)); return { key, text: raw ? lat.decode(raw) : null, n: d.length }; }
+    const flag = d[z + 1], l = d.indexOf(0, z + 3);
+    if (l < 0) return null;
+    const t2 = d.indexOf(0, l + 1);
+    if (t2 < 0) return null;
+    let body = d.subarray(t2 + 1);
+    if (flag === 1) { body = await inflate(body); if (!body) return { key, text: null, n: d.length }; }
+    return { key, text: utf.decode(body), n: d.length };
+  }
+
+  async function dump(input) {
+    const b = u8(input), info = inspect(b), encrypted = !!info.capsule;
+    const acc = new Map(GROUPS.map(([id, title, sealable]) => [id, { id, title, sealable, rows: [], note: '' }]));
+    const push = (id, rows) => { for (const r of rows) acc.get(id).rows.push(r); };
+    const one = (id, k, v, extra) => acc.get(id).rows.push(Object.assign({ k, v }, extra));
+    const jpeg = info.format === 'jpeg';
+
+    // basic facts about the picture
+    one('image', 'Format', jpeg ? 'JPEG' : 'PNG');
+    one('image', 'Dimensions', info.dims.width + ' × ' + info.dims.height + ' px');
+    one('image', 'File size', size(b.length));
+    if (jpeg) {
+      const sof = info.parts.find((p) => p.marker >= 0xC0 && p.marker <= 0xCF && p.marker !== 0xC4 && p.marker !== 0xC8 && p.marker !== 0xCC);
+      const adobe = info.parts.find((p) => p.marker === 0xEE && p.tag === 'APP14 Adobe');
+      if (sof) {
+        const d = sof.dataStart, nc = b[d + 5], comps = [];
+        for (let i = 0; i < nc; i++) comps.push({ h: b[d + 7 + i * 3] >> 4, v: b[d + 7 + i * 3] & 15 });
+        const m = sof.marker;
+        one('image', 'Encoding', { 0xC0: 'Baseline DCT', 0xC1: 'Extended sequential DCT', 0xC2: 'Progressive DCT' }[m] || 'JPEG (SOF' + (m - 0xC0) + ')');
+        one('image', 'Bit depth', b[d] + ' bits per component');
+        const tr = adobe ? b[adobe.dataStart + 11] : -1;
+        one('image', 'Color mode', nc === 1 ? 'Grayscale' : nc === 3 ? (tr === 0 ? 'RGB' : 'YCbCr') : nc === 4 ? (tr === 2 ? 'YCCK' : 'CMYK') : nc + ' components');
+        if (nc === 3) { const y = comps[0], c = comps[1]; one('image', 'Chroma subsampling', ({ '1,1': '4:4:4', '2,1': '4:2:2', '2,2': '4:2:0', '1,2': '4:4:0', '4,1': '4:1:1' })[(y.h / c.h) + ',' + (y.v / c.v)] || y.h + '×' + y.v); }
+      }
+    } else {
+      const ih = info.parts.find((p) => p.type === 'IHDR');
+      if (ih && ih.dataEnd - ih.dataStart >= 13) {
+        const d = ih.dataStart;
+        one('image', 'Bit depth', b[d + 8] + ' bits per channel');
+        one('image', 'Color type', { 0: 'Grayscale', 2: 'RGB', 3: 'Indexed', 4: 'Grayscale with alpha', 6: 'RGB with alpha' }[b[d + 9]] || String(b[d + 9]));
+        one('image', 'Interlace', b[d + 12] === 1 ? 'Adam7' : 'None');
+      }
+    }
+
+    const addExif = (tiff, prefix) => {
+      const w = walkTiff(tiff);
+      if (!w) { one('ifd0', 'Exif block', 'unreadable layout, ' + size(tiff.length)); return; }
+      const g = new Map(), by = {};
+      for (const e of w.list) { (by[e.ifd] || (by[e.ifd] = [])).push(e); if (e.ifd === 'gps' && e.ok) g.set(e.tag, tiffValue(w, e)); }
+      let thumb = 0;
+      for (const ifd of ['ifd0', 'exif', 'gps', 'interop', 'ifd1']) {
+        for (const e of by[ifd] || []) {
+          if (ifd === 'ifd1' && e.tag === 0x0202 && e.ok) thumb = tiffValue(w, e)[0] || 0;
+          if (SKIP[ifd].has(e.tag)) continue;
+          const name = NAMES[ifd][e.tag] || 'Tag ' + hex4(e.tag);
+          let v = 'unreadable';
+          if (e.ok) { try { v = fmtEntry(ifd, e, tiffValue(w, e), w, g); } catch (err) { v = 'unreadable'; } }
+          one(ifd, name, clip(v, 1200), { tag: hex4(e.tag) });
+        }
+      }
+      if (thumb) one('ifd1', 'Thumbnail image', 'JPEG, ' + size(thumb), { derived: true });
+      const la = g.get(2), lo = g.get(4);
+      if (Array.isArray(la) && Array.isArray(lo) && la.length === 3 && lo.length === 3) {
+        const sgn = (t, neg) => { const r = g.get(t); return typeof r === 'string' && r.toUpperCase().startsWith(neg) ? -1 : 1; };
+        const lat0 = (la[0] + la[1] / 60 + la[2] / 3600) * sgn(1, 'S'), lon0 = (lo[0] + lo[1] / 60 + lo[2] / 3600) * sgn(3, 'W');
+        if (Math.abs(lat0) <= 90 && Math.abs(lon0) <= 180) {
+          const rows = acc.get('gps').rows;
+          rows.unshift({ k: 'Position', v: Math.abs(lat0).toFixed(5) + '° ' + (lat0 < 0 ? 'S' : 'N') + ', ' + Math.abs(lon0).toFixed(5) + '° ' + (lon0 < 0 ? 'W' : 'E'), geo: [lat0, lon0], derived: true });
+        }
+      }
+    };
+
+    const icc = [];
+    for (const p of info.parts) {
+      try {
+        if (p.role === 'capsule') continue;
+        if (jpeg) {
+          const d = p.dataStart;
+          if (p.kind === 'exif') addExif(b.subarray(p.tiffStart, p.end));
+          else if (p.kind === 'xmp') push('xmp', xmpRows(utf.decode(b.subarray(p.textStart, p.end))));
+          else if (p.kind === 'xmpext') one('xmp', 'Extended XMP', size(p.size) + ' continuation of the XMP packet');
+          else if (p.kind === 'iptc') { const r = iptcRows(b, d, p.end); if (r.length) push('iptc', r); else one('iptc', 'Photoshop resources', size(p.size)); }
+          else if (p.kind === 'comment') one('comment', 'Comment', clip(utf.decode(b.subarray(d, p.end)), 1200) || '(empty)');
+          else if (p.kind === 'mpf') one('mpf', 'MPF index', size(p.size) + ', lists extra images stored in this file');
+          else if (p.kind === 'trailer') {
+            const head = str(b, p.start, 64);
+            one('trailer', 'Extra data', size(p.size) + (head.includes('ftyp') ? ', looks like an MP4 video clip' : b[p.start] === 0xFF && b[p.start + 1] === 0xD8 ? ', looks like another JPEG image' : ', unrecognized'));
+            one('trailer', 'First bytes', hexPrev(b.subarray(p.start, p.start + 16)));
+          } else if (p.kind === 'other') {
+            const id = lat.decode(b.subarray(d, Math.min(p.end, d + 24))).split('\0')[0];
+            one('other', p.tag, (/^[\x20-\x7e]{2,}$/.test(id) ? id + ', ' : '') + size(p.size));
+          } else if (p.tag === 'APP0 JFIF' && p.end - d >= 14) {
+            one('jfif', 'JFIF version', b[d + 5] + '.' + pad2(b[d + 6]));
+            one('jfif', 'Density', be16(b, d + 8) + ' × ' + be16(b, d + 10) + ' ' + ({ 0: '(aspect ratio only)', 1: 'dpi', 2: 'dots per cm' }[b[d + 7]] || ''));
+          } else if (p.tag === 'APP14 Adobe' && p.end - d >= 12) {
+            one('jfif', 'Adobe transform', { 0: 'None (RGB or CMYK)', 1: 'YCbCr', 2: 'YCCK' }[b[d + 11]] || String(b[d + 11]));
+          } else if (p.tag === 'APP2 ICC') icc.push({ seq: b[d + 12], data: b.subarray(d + 14, p.end) });
+        } else {
+          if (p.kind === 'exif') addExif(b.subarray(p.dataStart, p.dataEnd));
+          else if (p.kind === 'text') {
+            const t = await pngText(b, p);
+            if (t && t.key === 'XML:com.adobe.xmp' && t.text) push('xmp', xmpRows(t.text));
+            else if (t) one('text', clip(t.key, 60), t.text === null ? 'compressed text, ' + size(t.n) : clip(t.text, 1200) || '(empty)', { tag: p.type });
+          } else if (p.kind === 'time' && p.dataEnd - p.dataStart >= 7) {
+            const d = p.dataStart;
+            one('time', 'LastModified', be16(b, d) + '-' + pad2(b[d + 2]) + '-' + pad2(b[d + 3]) + ' ' + pad2(b[d + 4]) + ':' + pad2(b[d + 5]) + ':' + pad2(b[d + 6]) + ' UTC', { tag: 'tIME' });
+          } else if (p.kind === 'trailer') {
+            one('trailer', 'Extra data', size(p.size) + ' after the final PNG chunk');
+            one('trailer', 'First bytes', hexPrev(b.subarray(p.start, p.start + 16)));
+          } else if (p.kind === 'other') one('other', p.type, size(p.size), { tag: p.type });
+          else if (p.type === 'pHYs' && p.dataEnd - p.dataStart >= 9) {
+            const x = be32(b, p.dataStart), y = be32(b, p.dataStart + 4), u = b[p.dataStart + 8];
+            one('png', 'PixelsPerUnit', u === 1 ? x + ' × ' + y + ' per meter (' + fmtNum(x * 0.0254, 1) + ' dpi)' : x + ' × ' + y + ' (unit unknown)', { tag: 'pHYs' });
+          } else if (p.type === 'gAMA' && p.dataEnd - p.dataStart >= 4) one('png', 'Gamma', fmtNum(be32(b, p.dataStart) / 100000, 4), { tag: 'gAMA' });
+          else if (p.type === 'sRGB') one('png', 'sRGB rendering', ['Perceptual', 'Relative colorimetric', 'Saturation', 'Absolute colorimetric'][b[p.dataStart]] || String(b[p.dataStart]), { tag: 'sRGB' });
+          else if (p.type === 'cHRM') one('png', 'Chromaticities', 'present', { tag: 'cHRM' });
+          else if (p.type === 'iCCP') {
+            const d = b.subarray(p.dataStart, p.dataEnd), z = d.indexOf(0);
+            if (z > 0) { one('icc', 'Profile name', lat.decode(d.subarray(0, z))); const raw = await inflate(d.subarray(z + 2)); if (raw) icc.push({ seq: 1, data: raw }); }
+          }
+        }
+      } catch (err) { one('other', p.tag || p.type || 'Block', 'could not be read, ' + size(p.size)); }
+    }
+    if (icc.length) { icc.sort((x, y) => x.seq - y.seq); try { push('icc', iccRows(cat(icc.map((c) => c.data)))); } catch (err) { one('icc', 'Profile', 'could not be read'); } }
+
+    const groups = [];
+    let fields = 0, sealed = 0;
+    for (const [id] of GROUPS) {
+      const g = acc.get(id);
+      if (!g.rows.length) continue;
+      const n = g.rows.filter((r) => !r.derived).length, isSealed = g.sealable && !encrypted;
+      if (id !== 'image') { fields += n; if (isSealed) sealed += n; }
+      groups.push({ id, title: encrypted && id === 'ifd0' ? 'Exif: rotation flag only' : g.title, status: isSealed ? 'seal' : 'open', count: n, rows: g.rows });
+    }
+    return { groups, fields, sealed, encrypted, info };
+  }
+
+  return { inspect, dump, seal, unseal, size, buildTiff, exifSegment, addJpegSegments, ITER };
 })();
 </script>
 
@@ -737,9 +1237,9 @@ const DFSeal = (() => {
 (() => {
   'use strict';
   const $ = (id) => document.getElementById(id);
-  const el = { bench: $('bench'), preview: $('preview'), fname: $('fname'), fmeta: $('fmeta'), pills: $('pills'), pickBtn: $('pickBtn'), pickNote: $('pickNote'), fileInput: $('fileInput'), fileErr: $('fileErr'), banner: $('banner'), bannerTitle: $('bannerTitle'), bannerBody: $('bannerBody'), bannerCode: $('bannerCode'), saveBtn: $('saveBtn'), saveNote: $('saveNote'), map: $('map'), mapHint: $('mapHint'), readTitle: $('readTitle'), readout: $('readout'), form: $('form'), formTitle: $('formTitle'), fields: $('fields'), pass: $('pass'), pass2: $('pass2'), confirmField: $('confirmField'), passHelp: $('passHelp'), formErr: $('formErr'), showPass: $('showPass'), genBtn: $('genBtn'), copyBtn: $('copyBtn'), orientRow: $('orientRow'), keepOrient: $('keepOrient'), goBtn: $('goBtn'), empty: $('empty') };
+  const el = { bench: $('bench'), preview: $('preview'), fname: $('fname'), fmeta: $('fmeta'), pills: $('pills'), pickBtn: $('pickBtn'), pickNote: $('pickNote'), fileInput: $('fileInput'), fileErr: $('fileErr'), banner: $('banner'), bannerTitle: $('bannerTitle'), bannerBody: $('bannerBody'), bannerCode: $('bannerCode'), saveBtn: $('saveBtn'), saveNote: $('saveNote'), capBlock: $('capBlock'), capReadout: $('capReadout'), metaTitle: $('metaTitle'), metaSum: $('metaSum'), filter: $('filter'), toggleAll: $('toggleAll'), groups: $('groups'), noMatch: $('noMatch'), form: $('form'), formTitle: $('formTitle'), formLead: $('formLead'), fields: $('fields'), pass: $('pass'), pass2: $('pass2'), confirmField: $('confirmField'), passHelp: $('passHelp'), formErr: $('formErr'), showPass: $('showPass'), genBtn: $('genBtn'), copyBtn: $('copyBtn'), orientRow: $('orientRow'), keepOrient: $('keepOrient'), goBtn: $('goBtn'), empty: $('empty'), map: $('map'), mapHint: $('mapHint') };
   const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const state = { cur: null, banner: null, busy: false, url: null };
+  const state = { cur: null, banner: null, busy: false, url: null, seq: 0, dump: null, sampleChain: false };
 
   /* Saving: the Claude viewer hands files over through its own prompt; anywhere else a normal download works. */
   let saver = window.claude && window.claude.use ? 'pending' : 'anchor', downloads = null;
@@ -751,6 +1251,7 @@ const DFSeal = (() => {
   function show(n, on) { n.hidden = !on; }
   function setErr(n, msg) { n.textContent = msg || ''; show(n, !!msg); }
   const mime = (f) => (f === 'png' ? 'image/png' : 'image/jpeg');
+  const plural = (n, one, many) => n + ' ' + (n === 1 ? one : many);
 
   function load(bytes, name, origin) {
     const info = DFSeal.inspect(bytes);
@@ -760,20 +1261,25 @@ const DFSeal = (() => {
     el.preview.src = state.url;
     setErr(el.fileErr, '');
     setErr(el.formErr, '');
+    el.filter.value = '';
     render();
   }
 
+  function skeleton() {
+    el.groups.replaceChildren(...[62, 48, 74].map((w) => { const d = node('div', 'kv'); const a = node('div', 'k'), b = node('div', 'v'); const s1 = node('span', 'skel'), s2 = node('span', 'skel'); s1.style.cssText = 'display:block;width:70%'; s2.style.cssText = 'display:block;width:' + w + '%'; a.append(s1); b.append(s2); d.append(a, b); return d; }));
+  }
+
   function render() {
-    const { name, origin, info } = state.cur;
-    const sealedMode = !!info.capsule;
+    const { bytes, name, origin, info } = state.cur;
+    const encrypted = !!info.capsule;
     el.fname.textContent = name;
     el.pickNote.textContent = origin === 'sample' ? 'This is a made-up sample. Choose, drop or paste a JPEG or PNG of your own.' : 'JPEG or PNG. Drop or paste one here too.';
     el.fmeta.textContent = info.format.toUpperCase() + ' · ' + DFSeal.size(info.size) + ' · ' + info.dims.width + ' × ' + info.dims.height;
     el.pills.replaceChildren();
     if (origin === 'sample' || state.sampleChain) el.pills.append(node('span', 'pill', 'Sample'));
-    el.pills.append(sealedMode ? node('span', 'pill sealed', 'Sealed') : info.sealBytes ? node('span', 'pill exposed', 'Exposed') : node('span', 'pill clean', 'Clean'));
+    el.pills.append(encrypted ? node('span', 'pill sealed', 'Encrypted') : info.sealBytes ? node('span', 'pill exposed', 'Exposed') : node('span', 'pill clean', 'Clean'));
 
-    // structure map: consecutive identical kept parts collapse into one chip
+    // file structure map: consecutive identical kept parts collapse into one chip
     const chips = [];
     for (const p of info.parts) {
       const last = chips[chips.length - 1];
@@ -786,49 +1292,100 @@ const DFSeal = (() => {
       li.append(node('i', '', DFSeal.size(c.size)));
       return li;
     }));
-    el.mapHint.textContent = sealedMode
+    el.mapHint.textContent = encrypted
       ? 'The filled block holds the encrypted metadata. Photo viewers skip it and draw the picture from the rest.'
       : info.sealBytes
-        ? 'Outlined parts are metadata. Sealing replaces them with one encrypted block and copies everything else bit for bit.'
+        ? 'Outlined parts are the metadata. Encrypting replaces them with one encrypted block and copies everything else bit for bit.'
         : 'Every part of this file is needed to draw the picture.';
 
-    // readout
-    const rows = [];
-    if (sealedMode) {
-      el.readTitle.textContent = 'What a stranger sees now';
+    // encrypted block summary, only for files that already carry one
+    show(el.capBlock, encrypted);
+    if (encrypted) {
       const c = info.capsule;
-      rows.push(['Sealed block', DFSeal.size(c.bytes) + (c.blocks > 1 ? ' in ' + c.blocks + ' pieces' : '')]);
-      rows.push(['Cipher', 'AES-256-GCM']);
-      rows.push(['Key', 'PBKDF2-SHA256, ' + c.iterations.toLocaleString('en-US') + ' rounds']);
-      rows.push(['Contents', c.preview + ' ...', 'cipher']);
-      const left = info.fields.filter((f) => f.k !== 'Exif block');
-      if (left.length) for (const f of left) rows.push(['Still readable', f.k + ', ' + f.v]);
-      else rows.push(['Still readable', 'nothing but the picture']);
-    } else {
-      el.readTitle.textContent = 'What this file gives away';
-      for (const f of info.fields) rows.push([f.k, f.v, '', f.geo]);
-      if (!rows.length) rows.push(['Metadata', 'none found']);
+      const rows = [['Encrypted block', DFSeal.size(c.bytes) + (c.blocks > 1 ? ' in ' + c.blocks + ' pieces' : '')], ['Cipher', 'AES-256-GCM'], ['Key', 'PBKDF2-SHA256, ' + c.iterations.toLocaleString('en-US') + ' rounds'], ['Contents', c.preview + ' ...', 'cipher']];
+      el.capReadout.replaceChildren(...rows.map(([k, v, cls]) => { const d = node('div'); d.append(node('dt', '', k), node('dd', cls || '', v)); return d; }));
     }
-    el.readout.replaceChildren(...rows.map(([k, v, cls, geo]) => {
-      const div = node('div');
-      const dd = node('dd', cls || '', v);
-      if (geo) { const a = node('a', '', 'Map'); a.href = 'https://www.openstreetmap.org/?mlat=' + geo[0].toFixed(5) + '&mlon=' + geo[1].toFixed(5) + '#map=16/' + geo[0].toFixed(5) + '/' + geo[1].toFixed(5); a.target = '_blank'; a.rel = 'noopener'; dd.append(a); }
-      div.append(node('dt', '', k), dd);
-      return div;
-    }));
 
-    // form
-    const canAct = sealedMode || info.sealBytes > 0;
+    // the full metadata list is read in the background
+    el.metaTitle.textContent = encrypted ? 'Still readable in this file' : 'Metadata in this file';
+    el.metaSum.textContent = 'Reading every field in the file';
+    show(el.noMatch, false);
+    skeleton();
+    state.dump = null;
+    const seq = ++state.seq;
+    DFSeal.dump(bytes).then((d) => {
+      if (seq !== state.seq) return;
+      state.dump = d;
+      renderMeta(d);
+    }, () => {
+      if (seq !== state.seq) return;
+      el.metaSum.textContent = 'This file’s metadata could not be read. Encrypting still works on the parts the tool can find.';
+      el.groups.replaceChildren();
+    });
+
+    // the encrypt / decrypt step
+    const canAct = encrypted || info.sealBytes > 0;
     show(el.form, canAct); show(el.empty, !canAct);
-    el.formTitle.textContent = sealedMode ? 'Unseal it' : 'Seal it';
-    el.goBtn.textContent = sealedMode ? 'Unseal metadata' : 'Seal metadata';
-    show(el.confirmField, !sealedMode);
-    el.fields.classList.toggle('two', !sealedMode);
-    show(el.genBtn, !sealedMode);
-    show(el.passHelp, !sealedMode);
+    el.formTitle.textContent = encrypted ? 'Decrypt it' : 'Encrypt it';
+    el.formLead.textContent = encrypted ? 'Enter the passphrase to put the original metadata back, byte for byte.' : 'Encrypts everything marked “Will be encrypted” above with a passphrase. The picture is not changed.';
+    el.goBtn.textContent = encrypted ? 'Decrypt metadata' : 'Encrypt metadata';
+    show(el.confirmField, !encrypted);
+    el.fields.classList.toggle('two', !encrypted);
+    show(el.genBtn, !encrypted);
+    show(el.passHelp, !encrypted);
     const o = info.exif ? info.exif.orientation : 0;
-    show(el.orientRow, !sealedMode && info.format === 'jpeg' && o >= 2 && o <= 8);
+    show(el.orientRow, !encrypted && o >= 2 && o <= 8);
     renderBanner();
+  }
+
+  function renderMeta(d) {
+    const shown = d.groups.filter((g) => g.id !== 'image').length;
+    if (d.encrypted) el.metaSum.textContent = d.fields ? plural(d.fields, 'field is', 'fields are') + ' still readable. Everything else is inside the encrypted block.' : 'Nothing is readable except the picture itself. Everything else is inside the encrypted block.';
+    else if (!d.fields) el.metaSum.textContent = 'This file carries no metadata beyond the properties of the picture.';
+    else el.metaSum.textContent = plural(d.fields, 'field', 'fields') + ' in ' + plural(shown, 'group', 'groups') + '. ' + (d.sealed ? d.sealed + ' will be encrypted. ' : '') + (d.fields - d.sealed ? (d.fields - d.sealed) + ' stay readable because the picture needs them.' : '');
+    if (!d.encrypted && d.sealed) el.formLead.textContent = 'Encrypts the ' + plural(d.sealed, 'field', 'fields') + ' marked “Will be encrypted” above with a passphrase. The picture is not changed.';
+
+    el.groups.replaceChildren(...d.groups.map((g) => {
+      const open = g.status === 'seal' || g.id === 'image' || (d.encrypted && g.id === 'ifd0');
+      const det = node('details', 'grp');
+      det.open = open; det.dataset.def = open ? '1' : '0'; det.dataset.seal = g.status === 'seal' ? '1' : '0';
+      const sum = node('summary');
+      sum.append(node('span', 't', g.title), node('span', 'n', plural(g.count, 'field', 'fields')), node('span', g.status === 'seal' ? 'pill exposed st' : 'pill st', g.status === 'seal' ? 'Will be encrypted' : d.encrypted ? 'Readable' : 'Stays readable'));
+      det.append(sum);
+      for (const r of g.rows) {
+        const row = node('div', r.derived ? 'kv derived' : 'kv');
+        const k = node('div', 'k', r.k);
+        if (r.tag) k.append(node('small', '', r.tag));
+        const v = node('div', 'v', r.v);
+        if (r.geo) { const a = node('a', '', 'Map'); a.href = 'https://www.openstreetmap.org/?mlat=' + r.geo[0].toFixed(5) + '&mlon=' + r.geo[1].toFixed(5) + '#map=16/' + r.geo[0].toFixed(5) + '/' + r.geo[1].toFixed(5); a.target = '_blank'; a.rel = 'noopener'; v.append(a); }
+        row.append(k, v);
+        row._text = (r.k + ' ' + (r.tag || '') + ' ' + r.v).toLowerCase();
+        det.append(row);
+      }
+      return det;
+    }));
+    applyFilter();
+    syncToggle();
+  }
+
+  function applyFilter() {
+    const q = el.filter.value.trim().toLowerCase();
+    let any = 0;
+    for (const det of el.groups.querySelectorAll('.grp')) {
+      let n = 0;
+      for (const row of det.querySelectorAll('.kv')) { const hit = !q || row._text.includes(q); row.hidden = !hit; if (hit) n++; }
+      det.hidden = q ? n === 0 : false;
+      det.open = q ? n > 0 : det.dataset.def === '1';
+      any += n;
+    }
+    show(el.noMatch, !!q && any === 0);
+    syncToggle();
+  }
+
+  function syncToggle() {
+    const all = Array.from(el.groups.querySelectorAll('.grp')).filter((d) => !d.hidden);
+    el.toggleAll.textContent = all.some((d) => d.open) ? 'Collapse all' : 'Expand all';
+    show(el.toggleAll, all.length > 0);
   }
 
   function renderBanner() {
@@ -880,10 +1437,11 @@ const DFSeal = (() => {
     return (m ? m[1] : name) + '.restored.' + (m ? m[2].toLowerCase() : fmt === 'png' ? 'png' : 'jpg');
   }
 
-  /* The one piece of theatre: plain values turn to ciphertext before the view switches. */
+  /* The one piece of theatre: the values about to be encrypted turn to ciphertext before the view switches. */
   function scramble() {
     if (calm) return Promise.resolve();
-    const cells = Array.from(el.readout.querySelectorAll('dd'));
+    const cells = Array.from(el.groups.querySelectorAll('.grp[data-seal="1"][open] .v')).slice(0, 120);
+    if (!cells.length) return Promise.resolve();
     const targets = cells.map((c) => c.textContent.length);
     const H = '0123456789abcdef';
     return new Promise((done) => {
@@ -927,24 +1485,24 @@ const DFSeal = (() => {
     }
     state.busy = true;
     el.goBtn.disabled = true; el.goBtn.classList.add('busy');
-    el.goBtn.textContent = sealing ? 'Sealing' : 'Unsealing';
+    el.goBtn.textContent = sealing ? 'Encrypting' : 'Decrypting';
     try {
       if (sealing) {
         const r = await DFSeal.seal(bytes, pass, { keepOrientation: el.keepOrient.checked });
-        if (!(await pictureIntact(bytes, r.bytes, info.format))) throw Object.assign(new Error('The sealed copy did not open as a picture, so nothing was changed. This file has a structure the tool does not handle.'), { code: 'check' });
+        if (!(await pictureIntact(bytes, r.bytes, info.format))) throw Object.assign(new Error('The encrypted copy did not open as a picture, so nothing was changed. This file has a structure the tool does not handle.'), { code: 'check' });
         await scramble();
         state.banner = {
-          title: 'Sealed.',
+          title: 'Encrypted.',
           body: DFSeal.size(r.sealedBytes) + ' of metadata is now a ' + DFSeal.size(r.capsuleBytes) + ' encrypted block. The picture data was not touched. Keep the passphrase: without it the metadata cannot be brought back.',
-          save: 'Save sealed photo', note: '',
+          save: 'Save encrypted photo', note: '',
         };
         if (state.cur.origin === 'sample') state.sampleChain = true;
         load(r.bytes, sealedName(name, info.format), 'sealed');
       } else {
         const r = await DFSeal.unseal(bytes, pass);
         state.banner = r.verified
-          ? { title: 'Restored.', body: 'This file is byte for byte the original. Its SHA-256 matches the one recorded when it was sealed.', code: 'sha256 ' + r.sha256, save: 'Save restored photo', note: '' }
-          : { title: 'Restored, with a warning.', warn: true, body: 'The metadata is back, but the file was changed after it was sealed, so it is not identical to the original.', save: 'Save restored photo', note: '' };
+          ? { title: 'Restored.', body: 'This file is byte for byte the original. Its SHA-256 matches the one recorded when it was encrypted.', code: 'sha256 ' + r.sha256, save: 'Save restored photo', note: '' }
+          : { title: 'Restored, with a warning.', warn: true, body: 'The metadata is back, but the file was changed after it was encrypted, so it is not identical to the original.', save: 'Save restored photo', note: '' };
         load(r.bytes, restoredName(name, info.format), 'restored');
       }
       el.pass.value = ''; el.pass2.value = '';
@@ -957,7 +1515,7 @@ const DFSeal = (() => {
     } finally {
       state.busy = false;
       el.goBtn.disabled = false; el.goBtn.classList.remove('busy');
-      el.goBtn.textContent = state.cur.info.capsule ? 'Unseal metadata' : 'Seal metadata';
+      el.goBtn.textContent = state.cur.info.capsule ? 'Decrypt metadata' : 'Encrypt metadata';
     }
   }
 
@@ -978,6 +1536,14 @@ const DFSeal = (() => {
   el.saveBtn.addEventListener('click', save);
   el.pickBtn.addEventListener('click', () => el.fileInput.click());
   el.fileInput.addEventListener('change', () => { takeFile(el.fileInput.files[0]); el.fileInput.value = ''; });
+  el.filter.addEventListener('input', applyFilter);
+  el.toggleAll.addEventListener('click', () => {
+    const all = Array.from(el.groups.querySelectorAll('.grp')).filter((d) => !d.hidden);
+    const open = !all.some((d) => d.open);
+    all.forEach((d) => { d.open = open; });
+    syncToggle();
+  });
+  el.groups.addEventListener('toggle', syncToggle, true);
   ['dragenter', 'dragover'].forEach((t) => el.bench.addEventListener(t, (e) => { e.preventDefault(); el.bench.classList.add('drag'); }));
   ['dragleave', 'drop'].forEach((t) => el.bench.addEventListener(t, (e) => { e.preventDefault(); el.bench.classList.remove('drag'); }));
   el.bench.addEventListener('drop', (e) => takeFile(e.dataTransfer && e.dataTransfer.files[0]));
@@ -1020,17 +1586,30 @@ const DFSeal = (() => {
     try {
       const blob = await drawSample();
       const raw = new Uint8Array(await blob.arrayBuffer());
+      const T = (s) => new TextEncoder().encode(s);
       const tiff = DFSeal.buildTiff({
-        ifd0: [[0x010F, 2, 'Apple'], [0x0110, 2, 'iPhone 15 Pro'], [0x0112, 3, 1], [0x0131, 2, '17.6.1'], [0x0132, 2, '2026:09:19 18:42:08']],
-        exif: [[0x9003, 2, '2026:09:19 18:42:08'], [0x9011, 2, '-05:00'], [0xA434, 2, 'iPhone 15 Pro back triple camera 6.765mm f/1.78']],
-        gps: [[1, 2, 'N'], [2, 5, [[36, 1], [8, 1], [5892, 100]]], [3, 2, 'W'], [4, 5, [[86, 1], [48, 1], [4788, 100]]], [6, 5, [[166, 1]]]],
+        ifd0: [[0x010F, 2, 'Apple'], [0x0110, 2, 'iPhone 15 Pro'], [0x0112, 3, 1], [0x011A, 5, [[72, 1]]], [0x011B, 5, [[72, 1]]], [0x0128, 3, 2], [0x0131, 2, '17.6.1'], [0x0132, 2, '2026:09:19 18:42:08'], [0x0213, 3, 1]],
+        exif: [
+          [0x829A, 5, [[1, 120]]], [0x829D, 5, [[178, 100]]], [0x8822, 3, 2], [0x8827, 3, 125], [0x9000, 7, T('0232')],
+          [0x9003, 2, '2026:09:19 18:42:08'], [0x9004, 2, '2026:09:19 18:42:08'], [0x9010, 2, '-05:00'], [0x9011, 2, '-05:00'],
+          [0x9101, 7, new Uint8Array([1, 2, 3, 0])], [0x9201, 10, [[6906, 1000]]], [0x9202, 5, [[1699, 1000]]], [0x9204, 10, [[0, 1]]],
+          [0x9207, 3, 5], [0x9209, 3, 16], [0x920A, 5, [[6765, 1000]]], [0x9291, 2, '412'], [0xA000, 7, T('0100')], [0xA001, 3, 1],
+          [0xA002, 4, 960], [0xA003, 4, 640], [0xA402, 3, 0], [0xA403, 3, 0], [0xA405, 3, 24], [0xA406, 3, 0],
+          [0xA432, 5, [[6765, 1000], [6765, 1000], [178, 100], [178, 100]]], [0xA433, 2, 'Apple'], [0xA434, 2, 'iPhone 15 Pro back triple camera 6.765mm f/1.78'],
+        ],
+        gps: [
+          [0, 1, new Uint8Array([2, 3, 0, 0])], [1, 2, 'N'], [2, 5, [[36, 1], [8, 1], [5892, 100]]], [3, 2, 'W'], [4, 5, [[86, 1], [48, 1], [4788, 100]]],
+          [5, 1, new Uint8Array([0])], [6, 5, [[166, 1]]], [7, 5, [[23, 1], [42, 1], [8, 1]]], [12, 2, 'K'], [13, 5, [[0, 1]]],
+          [16, 2, 'T'], [17, 5, [[2871, 10]]], [29, 2, '2026:09:19'], [31, 5, [[5, 1]]],
+        ],
       });
       if (state.cur) return;
       load(DFSeal.addJpegSegments(raw, [DFSeal.exifSegment(tiff)]), 'sample-ridge.jpg', 'sample');
     } catch (e) {
       el.fname.textContent = 'No photo loaded';
-      el.readout.replaceChildren();
-      el.mapHint.textContent = 'Choose a JPEG or PNG to see what it carries.';
+      el.groups.replaceChildren();
+      el.metaSum.textContent = 'Choose a JPEG or PNG to see everything it carries.';
+      el.mapHint.textContent = '';
       show(el.form, false);
     }
   }
